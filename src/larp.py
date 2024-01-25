@@ -114,7 +114,7 @@ class LARP:
                                           vtype=GRB.BINARY, name='Z')
 
     def _decleare_objective_function(self) -> None:
-        self._model.setObjective(
+        self._model.setObjective( 
             gp.quicksum(self._f[j]*self._X[self.storages_idx[j]] for j in self._storages) +
             gp.quicksum(self._cs_dist.loc[i,j]*self._pivot_d.loc[i,h]*self._Y[self.fields_idx[i],self.storages_idx[j]] 
                         for i in self._fields for j in self._storages for h in self._households) +
@@ -212,6 +212,12 @@ class LARP:
 
         self._model.optimize()
 
+        # quick check if an optimal solution is found
+        try:
+            _ = round(self._model.ObjVal, 2)
+        except AttributeError as e:
+            print('WARNING: problem is infeasible')
+
     def get_solutions(self) -> tuple:
         self._X_sol = np.array([self._X[self.storages_idx[j]].x for j in self._storages])
         X_sol_rapresentation = [self.idx_to_storages[x] for x in range(len(self.X_sol)) if self._X_sol[x] > 0.5]
@@ -251,6 +257,9 @@ class LARP:
                    'assignment_cost':assignment_cost, 'transportation_cost':transportation_cost, 
                    'runtime':round(self._model.Runtime, 2)}
         return results
+    
+    def get_execution_time(self) -> float:
+        return round(self._model.Runtime, 2)
     
     def dispose(self) -> None:
         self._model.dispose()
