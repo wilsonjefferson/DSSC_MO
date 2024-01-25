@@ -205,11 +205,19 @@ class LARP:
                 if u!=v:
                     self._model.addConstr(W_2[self.J_0_idx[u], self.J_0_idx[v]] <= self._Z[self.J_0_idx[u], self.J_0_idx[v]])
 
-    def optimize(self) -> None:
+    def build(self) -> None:
         self._declare_decision_variables()
-        self._decleare_objective_function()
-        self._decleare_constrains()
+        print('LARP decision variables defined')
 
+        self._decleare_objective_function()
+        print('LARP objective function defined')
+
+        self._decleare_constrains()
+        print('LARP constrains defined')
+
+        print('-- LARP model SUCCESSFULLY built --')
+
+    def optimize(self) -> None:
         self._model.optimize()
 
         # quick check if an optimal solution is found

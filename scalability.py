@@ -20,7 +20,7 @@ if __name__ == '__main__':
     n_fields_instances = [100, 500, 1000]
     m_storages_instances = [10, 20, 50, 100, 200]
 
-    use = (max(n_fields_instances), max(m_storages_instances))
+    use = (max(n_fields_instances), max(m_storages_instances), folder_path)
     _fields, _storages, _households, _f, _q, _fs_dist, _cs_dist, _pivot_d = random_data(*use)
 
     cartesian = product(n_fields_instances, m_storages_instances)
@@ -61,6 +61,7 @@ if __name__ == '__main__':
                         cs_dist, 
                         pivot_d)
         
+        larp_model.build()
         larp_model.optimize()
         
         # NOTE: scalability = [num. of storages, num. of fields, runtime (sec)]
