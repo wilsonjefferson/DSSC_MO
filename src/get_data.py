@@ -15,7 +15,7 @@ def create_folder_if_not_exists(folder_path):
 
 def random_data(n_fields:int, m_storages:int) -> tuple:
 
-    folder_path = os.getcwd() + f"\\DSSC_MO\\backup\\"
+    folder_path = os.getcwd() + '\\DSSC_MO\\backup\\backup_scalability\\'
     create_folder_if_not_exists(folder_path)
 
     storages = ['S'+str(i) for i in range(m_storages)]

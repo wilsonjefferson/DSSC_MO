@@ -10,7 +10,7 @@ from src.plot_scalability import plot_scalability
 
 if __name__ == '__main__':
 
-    folder_path = os.getcwd() + '\\DSSC_MO\\backup\\'
+    folder_path = os.getcwd() + '\\DSSC_MO\\backup\\backup_scalability\\'
     backup = folder_path + 'scalability.pkl'
 
     k_vehicles = 5
