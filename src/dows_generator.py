@@ -1,7 +1,7 @@
 from gurobipy import GRB
 from src.dow import DOW
 from src.larp import LARP
-
+import numpy as np
 
 def check_and_fit(larp:LARP, dow:DOW):
 
@@ -15,22 +15,28 @@ def check_and_fit(larp:LARP, dow:DOW):
         constr = model.getConstrByName(f'Constr_WaterFlow[{i}]')
         model.remove(constr)
 
+    print('LARP status :', model.status)
     if model.status == GRB.SOLUTION_LIMIT:
         dow.obj_value = model.ObjVal
-        return True, larp.Y, larp.Z
-    return False, None, None
+        dow.Y = larp.Y
+        dow.Z = larp.Z 
+        return check_additional_constr(dow)
+    return False
+
+def check_additional_constr(dow:DOW) -> bool:
+    X_idx = [i for i in np.nonzero(dow.X)[0]]
+    columns_nozero = all([dow.Y[:, j].any() for j in X_idx])
+    return columns_nozero
 
 def dows_generator(larp, n_dows:int, m_storages:int, n_fields:int, k_vehicles:int):
     for i in range(n_dows):
         print('generator loop:', i)
         while True:
             dow = DOW(m_storages, n_fields, k_vehicles)
+            dow.set_rand_X()
             print('dow created')
-            is_feasible, Y, Z =  check_and_fit(larp, dow)
-
-            if is_feasible:
-                dow.Y = Y
-                dow.Z = Z 
+            
+            if check_and_fit(larp, dow):
                 print('iter:', i, ' --> DOW FEASIBLE', sep=' ')
                 break
             else:
