@@ -3,6 +3,27 @@ import numpy as np
 
 
 def plot_scalability(results:list, save_at:str) -> None:
+    '''
+        Public function to generate a figure rapresenting
+        the trend for certain sets of storages and fields.
+
+        The aim of this function is to show a graphical
+        analysis of the scalability of LARP model.
+
+        Arguments
+        ---------
+
+        results:list
+        List of storages, fields, vehicles and runtime
+
+        save_at:str
+        Path where store the generated plot
+
+        Return
+        ------
+
+        None
+    '''
 
     results_array = np.array(results)
     n_fields_instances = np.unique(results_array[:, 1])
