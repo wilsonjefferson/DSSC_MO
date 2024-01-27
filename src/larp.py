@@ -107,7 +107,7 @@ class LARP:
             'pivot_d': self._pivot_d}
 
     def _declare_decision_variables(self) -> None:
-        self._X = self._model.addVars([j for j in range(self.m_storages)], vtype=GRB.BINARY, name='X')
+        self._X = self._model.addVars([j for j in range(self.m_storages+1)], vtype=GRB.BINARY, name='X')
         self._Y = self._model.addVars([(i,j) for i in range(self.n_fields) for j in range(self.m_storages)], 
                                           vtype=GRB.BINARY, name='Y')
         self._Z = self._model.addVars([(u,v) for u in range(len(self.J_0)) for v in range(len(self.J_0)) if u!=v], 
@@ -183,12 +183,11 @@ class LARP:
 
         for u in self.J_0:
             for v in self.J_0:
-                if u!=v and u in self._storages:
-                    self._model.addConstr(W_1[self.J_0_idx[u], self.J_0_idx[v]] <= self._X[self.storages_idx[u]])
-                    self._model.addConstr(
-                        W_1[self.J_0_idx[u], self.J_0_idx[v]] >= self._X[self.storages_idx[u]] + self.Z[self.J_0_idx[u], self.J_0_idx[v]] - 1
-                    )
                 if u!=v:
+                    self._model.addConstr(W_1[self.J_0_idx[u], self.J_0_idx[v]] <= self._X[self.J_0_idx[u]])
+                    self._model.addConstr(
+                        W_1[self.J_0_idx[u], self.J_0_idx[v]] >= self._X[self.J_0_idx[u]] + self.Z[self.J_0_idx[u], self.J_0_idx[v]] - 1
+                    )
                     self._model.addConstr(W_1[self.J_0_idx[u], self.J_0_idx[v]] <= self._Z[self.J_0_idx[u], self.J_0_idx[v]])
 
         for u in self._storages:
@@ -197,12 +196,11 @@ class LARP:
 
         for u in self.J_0:
             for v in self.J_0:
-                if u!=v and v in self._storages:
-                    self._model.addConstr(W_2[self.J_0_idx[u], self.J_0_idx[v]] <= self._X[self.storages_idx[v]])
-                    self._model.addConstr(
-                        W_2[self.J_0_idx[u], self.J_0_idx[v]] >= self._X[self.storages_idx[v]] + self._Z[self.J_0_idx[u], self.J_0_idx[v]] - 1
-                    )
                 if u!=v:
+                    self._model.addConstr(W_2[self.J_0_idx[u], self.J_0_idx[v]] <= self._X[self.J_0_idx[v]])
+                    self._model.addConstr(
+                        W_2[self.J_0_idx[u], self.J_0_idx[v]] >= self._X[self.J_0_idx[v]] + self._Z[self.J_0_idx[u], self.J_0_idx[v]] - 1
+                    )
                     self._model.addConstr(W_2[self.J_0_idx[u], self.J_0_idx[v]] <= self._Z[self.J_0_idx[u], self.J_0_idx[v]])
 
     def build(self) -> None:
@@ -215,7 +213,7 @@ class LARP:
         self._decleare_constrains()
         print('LARP constrains defined')
 
-        print('-- LARP model SUCCESSFULLY built --')
+        print('-- LARP model build COMPLETED --')
 
     def optimize(self) -> None:
         self._model.optimize()
