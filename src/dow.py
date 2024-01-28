@@ -72,9 +72,9 @@ class DOW:
 
     def __eq__(self, other) -> bool:
         if isinstance(other, DOW):
-            return self.X == other.X and \
-                    self.Y == other.Y \
-                    and self.Z == other.Z
+            return (self.X == other.X).all() and \
+                    (self.Y == other.Y).all() and \
+                    (self.Z == other.Z).all()
         return False
 
     def __ne__(self, other) -> bool:
@@ -88,6 +88,7 @@ class DOW:
         self._Y = np.array(self._Y)
 
         F_firsts_pos = np.nonzero(self._Z[self._Z.shape[0]-1, :] == 1)[0]
+         # print('F firsts pos:', F_firsts_pos)
         routes = list()
         for pos in F_firsts_pos:
             route = list()
@@ -95,6 +96,7 @@ class DOW:
             route.append(pos+1)
             while pos != self._Z.shape[1]-1:
                 pos = np.nonzero(self._Z[pos, :] == 1)[0][0]
+                # print('while | pos:', pos)
                 route.append(pos+1)
             routes.append(route)
         self._Z = [pos for route in routes for pos in route]

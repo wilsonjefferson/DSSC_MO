@@ -16,7 +16,7 @@ def check_and_fit(larp:LARP, dow:DOW):
         model.remove(constr)
 
     print('LARP status :', model.status)
-    if model.status == GRB.SOLUTION_LIMIT:
+    if model.status in [GRB.SOLUTION_LIMIT, GRB.OPTIMAL]:
         dow.obj_value = model.ObjVal
         dow.Y = larp.Y
         dow.Z = larp.Z 
