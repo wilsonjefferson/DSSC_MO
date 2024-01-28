@@ -155,7 +155,7 @@ class LARP:
         '''
             Support function used to decleare the decision variables
         '''
-        self._X = self._model.addVars([j for j in range(self.m_storages+1)], vtype=GRB.BINARY, name='X')
+        self._X = self._model.addVars([j for j in range(len(self.J_0))], vtype=GRB.BINARY, name='X')
         self._Y = self._model.addVars([(i,j) for i in range(self.n_fields) for j in range(self.m_storages)], 
                                           vtype=GRB.BINARY, name='Y')
         self._Z = self._model.addVars([(u,v) for u in range(len(self.J_0)) for v in range(len(self.J_0)) if u!=v], 
@@ -283,13 +283,13 @@ class LARP:
             required step to set the LARP model and start the optimization.
         '''
         self._declare_decision_variables()
-        print('LARP decision variables defined')
+        # print('LARP decision variables defined')
 
         self._decleare_objective_function()
-        print('LARP objective function defined')
+        # print('LARP objective function defined')
 
         self._decleare_constrains()
-        print('LARP constrains defined')
+        # print('LARP constrains defined')
 
         print('-- LARP model build COMPLETED --')
 
@@ -298,12 +298,6 @@ class LARP:
             Public method to start the LARP optimization
         '''
         self._model.optimize()
-
-        # quick check if an optimal solution is found
-        try:
-            _ = round(self._model.ObjVal, 2)
-        except AttributeError as e:
-            print('WARNING: problem is infeasible')
 
     def get_solutions(self) -> tuple:
         '''
