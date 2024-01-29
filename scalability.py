@@ -12,15 +12,15 @@ from src.larp import LARP
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\scalability2.pkl'
+    backup = os.getcwd() + '\\DSSC_MO\\backup\\scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters
     n_iterations = 10
     iterations = range(n_iterations)
     n_fields_instances = [100, 300]
-    m_storages_instances = [10, 20, 30, 50, 70, 100]
-    k_vehicles_instances = [3, 6, 9, 15, 21, 30]
+    m_storages_instances = [10, 20, 30, 40]
+    k_vehicles_instances = [3, 6, 9, 12]
 
     Q_vehicle_capacity = 2000
     facility = 'F'
