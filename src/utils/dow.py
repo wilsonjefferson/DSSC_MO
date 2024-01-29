@@ -43,7 +43,7 @@ class DOW:
         for i in range(self._Y.shape[0]):
             for j in range(self._Y.shape[1]):
                 if isinstance(other, tupledict):
-                    self._Y[i,j] = other[i,j].X
+                    self._Y[i,j] = other[i,j].x
                 else:
                     self._Y[i,j] = other[i,j]
 
@@ -58,7 +58,7 @@ class DOW:
             for v in range(self._Z.shape[1]):
                 if u!=v:
                     if isinstance(other, tupledict):
-                        self._Z[u,v] = other[u,v].X
+                        self._Z[u,v] = other[u,v].x
                     else:
                         self._Z[u,v] = other[u,v]
                 
@@ -69,6 +69,9 @@ class DOW:
         out_string += f'Y: {self._Y}\n'
         out_string += f'Z: {self._Z}\n'
         return out_string
+    
+    def __hash__(self) -> int:
+        return hash(repr(self))
 
     def __eq__(self, other) -> bool:
         if isinstance(other, DOW):
@@ -94,9 +97,11 @@ class DOW:
             route = list()
             route.append(0)
             route.append(pos+1)
-            while pos != self._Z.shape[1]-1:
+            while True:
                 pos = np.nonzero(self._Z[pos, :] == 1)[0][0]
                 # print('while | pos:', pos)
+                if pos == self._Z.shape[1]-1:
+                    break
                 route.append(pos+1)
             routes.append(route)
         self._Z = [pos for route in routes for pos in route]
@@ -114,10 +119,12 @@ class DOW:
             u = self._Z[idx]
             v = self._Z[idx+1]
             if u == 0:
-                Z[self.m_storages, v] = 1
+                Z[self.m_storages, v-1] = 1
+            elif v == 0:
+                Z[u-1,self.m_storages] = 1
             else:
-                Z[u,v] = 1
-        Z[self._Z[len(self._Z)-1],self.m_storages] = 1
+                Z[u-1, v-1] = 1
+        Z[self._Z[len(self._Z)-1]-1, self.m_storages] = 1
         self._Z = Z
         
             

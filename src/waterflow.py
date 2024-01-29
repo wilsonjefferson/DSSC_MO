@@ -1,8 +1,8 @@
+from src.utils.get_data import random_data
 from src.larp import LARP
-from src.get_data import random_data
-from src.dows_generator import dows_generator
-from src.opt_1_neighbourhood import opt_1
-import os
+
+from src.utils.clouds_generator import clouds_generator
+from src.local_search import local_search
 
 
 if __name__ == '__main__':
@@ -14,36 +14,41 @@ if __name__ == '__main__':
     n_fields_instances = 100
     m_storages_instances = 20
 
-    folder_path = os.getcwd() + '\\backup\\waterflow\\'
-
-    use = (n_fields_instances, m_storages_instances, folder_path)
+    use = (n_fields_instances, m_storages_instances)
     fields, storages, households, f, q, fs_dist, cs_dist, d = random_data(*use)
 
-    larp_model = LARP(facility, 
-                    k_vehicles, 
-                    Q_vehicle_capacity, 
-                    fields, 
-                    storages, 
-                    households, 
-                    f, 
-                    q, 
-                    fs_dist, 
-                    cs_dist, 
-                    d)
+    larp = LARP(facility, 
+                k_vehicles, 
+                Q_vehicle_capacity, 
+                fields, 
+                storages, 
+                households, 
+                f, 
+                q, 
+                fs_dist, 
+                cs_dist, 
+                d)
+    
+    larp.build()
 
-    # NOTE: Since it is difficult to find an optimal solution 
-    # trying with random X, Y and Z (decision variables)
-    # we fix a random X and set guroby to find and stop the very first feasible solution
-    larp_model.model.setParam('SolutionLimit', 1)
-    larp_model.build()
+    dows = dict()
+    P0_list = list()
+    UE_list = list()
+    E_list = list()
 
-    n_dows = 5
-    generator = dows_generator(larp_model, n_dows, m_storages_instances, n_fields_instances, k_vehicles)
-    rainfall = list()
-    for i, dow in enumerate(generator):
-        print('i:', i, 'objvalue:', dow.obj_value, sep=' ')
-        rainfall.append(dow)
+    discarded_list = list()
 
-    for dow in rainfall:
-        local_optimum = opt_1(larp_model, dow)
-        print(local_optimum)
+    max_cloud = 10
+    max_pop = 10
+
+    clouds = clouds_generator(max_cloud, larp, max_pop)
+
+    for cloud in clouds:
+        rainfall, discarded_dows = cloud.make_rain(E_list, discarded_list)
+        discarded_list.extend(discarded_dows)
+
+        for dow in rainfall:
+            local_optimum, neighbours, discarded_dows = local_search(larp, dow)
+            dows[local_optimum] = neighbours
+            discarded_list.extend(discarded_dows)
+            

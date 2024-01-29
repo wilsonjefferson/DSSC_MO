@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 from copy import deepcopy
 
-from src.dow import DOW
+from src.utils.dow import DOW
 from src.larp import LARP
 from src.utils.gurobipy_utils import (fit, 
                                       add_constrs, 
@@ -10,7 +10,7 @@ from src.utils.gurobipy_utils import (fit,
                                       remove_constrs)
 
 
-def swap(larp:LARP, dow:DOW) -> list:
+def swap(larp:LARP, dow:DOW) -> tuple:
 
     neighbours = list()
     discarded_dows = list()
@@ -21,7 +21,7 @@ def swap(larp:LARP, dow:DOW) -> list:
     
     cartesian = product(X_idx_zeros, X_idx_nonzeros)
     for zero_idx, nonzero_idx in cartesian:
-        print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
+        # print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
 
         tmp_X = deepcopy(dow.X)
         tmp_X[zero_idx] = 1
@@ -52,29 +52,39 @@ def swap(larp:LARP, dow:DOW) -> list:
         # print('neighbour dow:', neighbour_dow)
 
         if constrs:
-            modify_rhs_constrs(larp, neighbour_dow, constrs)
+            modify_rhs_constrs(neighbour_dow, constrs)
         else:
-            constrs = add_constrs(larp, neighbour_dow)
+            larp, constrs = add_constrs(larp, neighbour_dow)
 
-        if fit(larp, neighbour_dow):
-            print('neighbour dow is FEASIBLE')
+        larp, is_fit = fit(larp, neighbour_dow)
+        if is_fit:
+            # print('neighbour dow is FEASIBLE')
             neighbour_dow.to_vector()
             neighbours.append([neighbour_dow, neighbour_dow.obj_value])
-            print(neighbour_dow)
         else:
-            print('neighbour dow is NOT FEASIBLE')
-            neighbour_dow.to_vector()
+            #print('neighbour dow is NOT FEASIBLE')
             discarded_dows.append(neighbour_dow)
 
-    print('neighbours:', neighbours)
-    remove_constrs(larp, constrs)
+    # print('neighbours:', neighbours)
+    larp = remove_constrs(larp, constrs)
 
     candidate = dow
     if neighbours:
         dows, obj_vals = zip(*neighbours)
         obj_vals = [dow.obj_value for dow in dows]
-        idx_min_obj_val = obj_vals.index(min(obj_vals))
-        candidate = dows[idx_min_obj_val]
+        idx_min = obj_vals.index(min(obj_vals))
+        candidate = dows[idx_min]
+    else:
+        dows = []
 
-    local_optimum = dow if dow.obj_value <= candidate.obj_value else candidate
-    return local_optimum
+    if dow.obj_value <= candidate.obj_value:
+        # print('local optimum is dow!')
+        local_optimum = deepcopy(dow)
+    else:
+        # print('local optimum is candidate!')
+        local_optimum = deepcopy(candidate)
+        local_optimum.to_matrix()
+        dows = list(dows)
+        dows.remove(candidate)
+
+    return local_optimum, dows, discarded_dows

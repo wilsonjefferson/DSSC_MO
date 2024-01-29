@@ -4,7 +4,7 @@ from itertools import product, dropwhile
 import os
 from gurobipy import GRB
 
-from src.get_data import random_data
+from DSSC_MO.src.utils.get_data import random_data
 from src.larp import LARP
 # from src.plot_scalability import plot_scalability
 
