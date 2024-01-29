@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from copy import deepcopy
 import numpy as np
 from gurobipy import tupledict
 
@@ -23,7 +24,15 @@ class DOW:
         self._X = None
         self._Y = None
         self._Z = None
-        self.obj_value = None
+        self._obj_value = None
+
+    @property
+    def obj_value(self):
+        return self._obj_value
+
+    @obj_value.setter
+    def obj_value(self, other):
+        self._obj_value = deepcopy(other)
 
     @property
     def X(self) -> np.array:
@@ -31,7 +40,7 @@ class DOW:
 
     @X.setter
     def X(self, other) -> None:
-        self._X = np.array(other)
+        self._X = np.array(deepcopy(other))
 
     @property
     def Y(self) -> np.array:
@@ -43,9 +52,9 @@ class DOW:
         for i in range(self._Y.shape[0]):
             for j in range(self._Y.shape[1]):
                 if isinstance(other, tupledict):
-                    self._Y[i,j] = other[i,j].x
+                    self._Y[i,j] = deepcopy(other[i,j].x)
                 else:
-                    self._Y[i,j] = other[i,j]
+                    self._Y[i,j] = deepcopy(other[i,j])
 
     @property
     def Z(self) -> np.array:
@@ -58,13 +67,13 @@ class DOW:
             for v in range(self._Z.shape[1]):
                 if u!=v:
                     if isinstance(other, tupledict):
-                        self._Z[u,v] = other[u,v].x
+                        self._Z[u,v] = deepcopy(other[u,v].x)
                     else:
-                        self._Z[u,v] = other[u,v]
+                        self._Z[u,v] = deepcopy(other[u,v])
                 
 
     def __str__(self):
-        out_string = f'objValue: {self.obj_value}\n'
+        out_string = f'objValue: {self._obj_value}\n'
         out_string += f'X: {self._X}\n'
         out_string += f'Y: {self._Y}\n'
         out_string += f'Z: {self._Z}\n'

@@ -19,21 +19,29 @@ class CLOUD:
         rainfall = list()
         self.larp.model.setParam('SolutionLimit', 1)
 
-        n_dows = self.max_pop
-        while True:
-            no_feasible_dows = None
-            generator = self.dows_generator(self.larp, n_dows)
-            
-            for dow, no_dows in generator:
-                no_feasible_dows = deepcopy(no_dows)
-                if dow not in E_list and dow not in discarded_list and dow not in rainfall:
-                    rainfall.append(dow)
+        no_feasible_dows = None
+        generator = self.dows_generator(self.larp, self.max_pop)
+        
+        for dow, no_dows in generator:
+            no_feasible_dows = deepcopy(no_dows)
+            # print('make_rain | dow in generator:\n', dow)
 
-            n_dows = self.max_pop - len(rainfall)
-            # print('n_dows:', n_dows)
-            if n_dows == 0:
-                discarded_dows.extend(no_feasible_dows)
-                break
+            # print('check if dow in E_list...')
+            no_E_list = dow not in E_list
+            # print('check completed')
+
+            # print('check if dow in discarded_list...')
+            no_discarded_list = dow not in discarded_list
+            # print('check completed')
+
+            # print('check if dow in rainfall...')
+            no_rainfall = dow not in rainfall
+            # print('check completed.')
+
+            if no_E_list and no_discarded_list and no_rainfall:
+                rainfall.append(dow)
+
+        discarded_dows.extend(no_feasible_dows)
         
         self.larp.model.resetParams()
         return rainfall, discarded_dows
@@ -41,7 +49,7 @@ class CLOUD:
     def dows_generator(self, larp:LARP, n_dows:int) -> tuple:
         discarded_dows = list()
         constrs = None
-        for _ in range(n_dows):
+        for i in range(n_dows):
             while True:
                 dow = DOW(larp.m_storages, larp.n_fields, larp._k_vehicles)
                 dow.set_rand_X()
@@ -69,6 +77,7 @@ class CLOUD:
                 # print('iter:', i, ' --> DOW NOT FEASIBLE', sep=' ')
                 larp.model.reset(0)
 
+            dow.to_vector()
             yield dow, discarded_dows
         
         # print('remove additional constraints')

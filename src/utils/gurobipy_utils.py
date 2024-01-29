@@ -86,7 +86,6 @@ def fit(larp:LARP, dow:DOW) -> tuple:
     model = larp.model
     model.setParam('OutputFlag', 0)
 
-    model.update()
     # print('model optimization in-progress...')
     model.optimize()
     # print('model optimization COMPLETED')

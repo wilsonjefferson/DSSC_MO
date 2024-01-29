@@ -36,6 +36,7 @@ if __name__ == '__main__':
     UE_list = list()
     E_list = list()
 
+    excluded_list = list()
     discarded_list = list()
 
     max_cloud = 10
@@ -48,7 +49,8 @@ if __name__ == '__main__':
         discarded_list.extend(discarded_dows)
 
         for dow in rainfall:
-            local_optimum, neighbours, discarded_dows = local_search(larp, dow)
-            dows[local_optimum] = neighbours
+            local_optimum, neighbours, excluded_dows, discarded_dows = local_search(larp, dow)
+            excluded_list.extend(excluded_dows)
             discarded_list.extend(discarded_dows)
+            dows[local_optimum] = neighbours
             
