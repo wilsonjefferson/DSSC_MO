@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 
 from gurobipy import GRB
-from src.utils.dow import DOW
+from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
 
 

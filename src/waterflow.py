@@ -1,13 +1,13 @@
 from collections import Counter
 
 from src.larp import LARP
-from src.local_search import local_search, erosion
+from src.utils.utils_waterflow.local_search import local_search, erosion
 
-from src.utils.dow import DOW
-from src.utils.clouds_generator import clouds_generator
+from src.utils.utils_waterflow.dow import DOW
+from src.utils.utils_waterflow.clouds_generator import clouds_generator
 
 
-def waterflow_alg(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -> DOW:
+def waterflow(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -> DOW:
 
     optimal_dows = dict()
     P0_list = list()

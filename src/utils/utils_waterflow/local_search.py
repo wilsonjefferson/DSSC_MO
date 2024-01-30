@@ -1,8 +1,8 @@
 from src.larp import LARP
-from src.utils.dow import DOW
-from src.utils.opt_1_neighbourhood import opt_1
-from src.utils.swap_neighbourhood import swap
-from src.utils.sort_topology import sort_by_topology
+from src.utils.utils_waterflow.dow import DOW
+from src.utils.utils_waterflow.neighbourhood_strategies.opt_1_neighbourhood import opt_1
+from src.utils.utils_waterflow.neighbourhood_strategies.swap_neighbourhood import swap
+from src.utils.utils_waterflow.sort_topology import sort_by_topology
 
 
 def local_search(larp:LARP, dow:DOW) -> tuple:

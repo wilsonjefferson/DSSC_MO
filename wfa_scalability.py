@@ -6,9 +6,7 @@ from gurobipy import GRB
 
 from src.utils.get_data import random_data
 from src.larp import LARP
-from src.waterflow import waterflow_alg
-
-# from src.plot_scalability import plot_scalability
+from src.waterflow import waterflow
 
  
 if __name__ == '__main__':
@@ -43,8 +41,8 @@ if __name__ == '__main__':
     # check if a backup of the scalability already exist
     # this is in case the program was interrupted before its complention
     if os.path.exists(backup):
-        with open(backup, 'rb') as f:
-            scalability = pickle.load(f)
+        with open(backup, 'rb') as file:
+            scalability = pickle.load(file)
         
         # list of cases already evaluated
         computed = [(i,j,k) for i, j, _, k, _, _ in scalability]
@@ -100,23 +98,19 @@ if __name__ == '__main__':
 
             print('model optimization in-progress...')
             start_opt = timer()
-            best_solution = waterflow_alg(larp, max_cloud, max_pop, max_UIE, min_ero)
+            best_solution = waterflow(larp, max_cloud, max_pop, max_UIE, min_ero)
             end_opt = timer()
             print('Optimization time:', end_opt-start_opt)
 
             if best_solution is None:
                 print('problem is INFEASIBLE')
             else:
-                # NOTE: scalability = [num. of fields, num. of storages, num. of k_vehicles, iter, runtime (sec)]
+                # NOTE: scalability = [num. of fields, num. of storages, num. of k_vehicles, iter, build_time (sec), opt_time (sec)]
                 scalability.append([n_f, m_s, k_v, itr, build_time, larp.get_execution_time()])
 
                 # save updated information in scalability
-                with open(backup, 'wb') as f:
-                    pickle.dump(scalability, f)
+                with open(backup, 'wb') as file:
+                    pickle.dump(scalability, file)
             
                 larp.dispose()
                 break
-    
-    # folder_path = os.getcwd() + '\\DSSC_MO\\images\\'
-    # save_at = folder_path + 'scalability.svg'
-    # plot_scalability(scalability, save_at)

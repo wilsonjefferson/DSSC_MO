@@ -4,14 +4,14 @@ from itertools import product, dropwhile
 import os
 from gurobipy import GRB
 
-from DSSC_MO.src.utils.get_data import random_data
+from src.utils.get_data import random_data
 from src.larp import LARP
 
  
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\scalability.pkl'
+    backup = os.getcwd() + '\\DSSC_MO\\backup\\larp_scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters
@@ -31,8 +31,8 @@ if __name__ == '__main__':
     # check if a backup of the scalability already exist
     # this is in case the program was interrupted before its complention
     if os.path.exists(backup):
-        with open(backup, 'rb') as f:
-            scalability = pickle.load(f)
+        with open(backup, 'rb') as file:
+            scalability = pickle.load(file)
         
         # list of cases already evaluated
         computed = [(i,j,k) for i, j, _, k, _, _ in scalability]
@@ -90,12 +90,12 @@ if __name__ == '__main__':
             if larp_model.model.status in [GRB.INFEASIBLE, GRB.INF_OR_UNBD, GRB.UNBOUNDED]:
                 print('problem is INFEASIBLE')
             else:
-                # NOTE: scalability = [num. of fields, num. of storages, num. of k_vehicles, iter, runtime (sec)]
+                # NOTE: scalability = [num. of fields, num. of storages, num. of k_vehicles, iter, build_time (sec), opt_time (sec)]
                 scalability.append([n_f, m_s, k_v, itr, build_time, larp_model.get_execution_time()])
 
                 # save updated information in scalability
-                with open(backup, 'wb') as f:
-                    pickle.dump(scalability, f)
+                with open(backup, 'wb') as file:
+                    pickle.dump(scalability, file)
             
                 larp_model.dispose()
                 break

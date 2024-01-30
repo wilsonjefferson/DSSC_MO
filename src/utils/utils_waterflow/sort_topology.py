@@ -1,4 +1,4 @@
-from src.utils.dow import DOW
+from src.utils.utils_waterflow.dow import DOW
 
 
 def sort_by_topology(local_optimum:DOW, neighbours:list) -> list:

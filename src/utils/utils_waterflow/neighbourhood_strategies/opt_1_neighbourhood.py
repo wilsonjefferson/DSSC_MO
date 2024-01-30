@@ -3,7 +3,7 @@ from sympy.utilities.iterables import multiset_permutations
 from itertools import product
 from copy import deepcopy
 
-from src.utils.dow import DOW
+from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
 from src.utils.gurobipy_utils import (fit, 
                                       add_constrs, 

@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from src.larp import LARP
-from src.utils.dow import DOW
+from src.utils.utils_waterflow.dow import DOW
 
 from src.utils.gurobipy_utils import (add_constrs, 
                                       modify_rhs_constrs, 

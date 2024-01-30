@@ -1,5 +1,5 @@
 from src.larp import LARP
-from src.utils.cloud import CLOUD
+from src.utils.utils_waterflow.cloud import CLOUD
 
 
 def clouds_generator(n_clouds:int, larp:LARP, max_pop:int) -> CLOUD:
