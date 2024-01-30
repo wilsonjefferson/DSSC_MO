@@ -6,7 +6,6 @@ from gurobipy import GRB
 
 from src.get_data import random_data
 from src.larp import LARP
-# from src.plot_scalability import plot_scalability
 
  
 if __name__ == '__main__':
@@ -100,7 +99,3 @@ if __name__ == '__main__':
             
                 larp_model.dispose()
                 break
-    
-    # folder_path = os.getcwd() + '\\DSSC_MO\\images\\'
-    # save_at = folder_path + 'scalability.svg'
-    # plot_scalability(scalability, save_at)
