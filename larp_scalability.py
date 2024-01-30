@@ -6,21 +6,20 @@ from gurobipy import GRB
 
 from DSSC_MO.src.utils.get_data import random_data
 from src.larp import LARP
-# from src.plot_scalability import plot_scalability
 
  
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\scalability2.pkl'
+    backup = os.getcwd() + '\\DSSC_MO\\backup\\scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters
     n_iterations = 10
     iterations = range(n_iterations)
     n_fields_instances = [100, 300]
-    m_storages_instances = [10, 20, 30, 50, 70, 100]
-    k_vehicles_instances = [3, 6, 9, 15, 21, 30]
+    m_storages_instances = [10, 20, 30, 40]
+    k_vehicles_instances = [3, 6, 9, 12]
 
     Q_vehicle_capacity = 2000
     facility = 'F'
@@ -100,7 +99,3 @@ if __name__ == '__main__':
             
                 larp_model.dispose()
                 break
-    
-    # folder_path = os.getcwd() + '\\DSSC_MO\\images\\'
-    # save_at = folder_path + 'scalability.svg'
-    # plot_scalability(scalability, save_at)
