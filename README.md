@@ -6,28 +6,36 @@ The paper was pubblished on the European Journal of Operational Research in the 
 
 The aim of the paper is to present a mixed-integer nonlinear programming model for agricultural waste collection and transport network design that aims to stop burning waste and use the waste to produce bio-organic fertilizer. The model supports rural planners to optimally locate waste storages, and to determine the optimal set of routes for a fleet of vehicles to collect and transport the waste from the storages to the bio-organic fertilizer production facility.
 
-In addition, a parallel water flow algorithm is developed to solve efficiently the large-sized instances.
+In addition, a water flow algorithm is developed to solve efficiently the large-sized instances.
 
 ## Structure of the Git Folder
 
 The project folder is organized in several directories, following a short explanation of each of them:
 
-- Folder src - it contains the source code of the project such as the LARP model and a set of support functionalities;
+- `Folder src` - it contains the source code of the project, as for example the LARP model and a set of support functionalities;
 
-- Folder data - it contains the data shared by the authors of the paper to replicate the results;
+- `Folder data` - it contains the data shared by the authors of the paper to replicate the results;
 
-- Folder images - it contains the images generated;
+- `Folder images` - it contains the images generated;
 
-- Folder backup - it contains temporary data useful for the execution of the project;
+- `Folder backup` - it contains temporary data useful for the execution of the project;
 
-- larp_waste_management.ipynb - Notebook to illustrate each component of the LARP model, such as decision variables, objective function and constrains. This notebook replicate the strategy proposed in the paper and it produce the same results.
+- `Folder notebooks` - a collection of notebooks to run simple examples and to visualize scalability analysis trends.
 
-- scalability.py - main python script to start the scalability analysis;
+- `larp_scalability.py` - main python script to start the LARP scalability analysis;
 
-- environment.yml - yml file containing the requirements of the project.
+- `wfa_scalability.py` - main python script to start the WFA scalability analysis;
+
+- `presentation.pdf` - DRAFT presentation.
+
+- `paper.pdf` - original paper used to develop this project.
+
+- `environment.yml` - yml file containing the requirements of the project.
 
 ## How to run
 
 Once you have installed the requirements defined in the yaml file, you may want to execute the code proposed in larp_waste_management.ipynb notebook to replicate the same results proposed in the scientific paper.
 
-Alternatively, you can execute the scalability.py file to start the Scalability Analysis process. The aim is to evaluate the capability, of the proposed model, to scale for different problem sizes. This means, understand if the model is still able to provide an optimal solution in reasonable time.
+Alternatively, you can execute the larp_scalability.py file to start the Scalability Analysis process. The aim is to evaluate the capability, of the proposed model, to scale for different problem sizes. This means, understand if the model is still able to provide an optimal solution in reasonable time.
+
+This remains valid for the WaterFlow Algorithm meta-heuristic.

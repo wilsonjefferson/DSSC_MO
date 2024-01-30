@@ -1,2 +1,4 @@
 src/__pycache__/*
 src/utils/__pycache__/*
+src/utils/utils_waterflow/__pycache__/*
+src/utils/utils_waterflow/neighbourhood_strategies/__pycache__/*

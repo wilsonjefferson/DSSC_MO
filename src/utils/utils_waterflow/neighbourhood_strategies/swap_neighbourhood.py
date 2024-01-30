@@ -11,6 +11,36 @@ from src.utils.gurobipy_utils import (fit,
 
 
 def swap(larp:LARP, dow:DOW) -> tuple:
+    '''
+        Swap is a neighbourhood structure used during the local search
+        algorithm to identify the list of valid neighbours of a certain
+        solution, also called drop-of-water (dow).
+
+        Given dow.X (binary list), swap a 1 value with a 0 value and repeat
+        it for any 1s and 0s in dow.X, than adjust dow.Y and dow.Z and evaluate
+        the new dow with the LARP model, i.e. check if the neighbour dow is feasible.
+
+        The neighbourhood structure return the improved solution if exist.
+
+        Arguments
+        ---------
+        larp:LARP
+        An instance of the LARP model
+
+        dow:DOW
+        A drop-of-water (dow) representing a certain solution
+
+        Return
+        ------
+        local_optimum:DOW
+        An improved solution
+
+        dows:list
+        List of neighbours drop-of-waters (dows) for local optimum
+
+        discarded_dows:list
+        List of no feasible solutions
+    '''
 
     dow.to_matrix()
 
