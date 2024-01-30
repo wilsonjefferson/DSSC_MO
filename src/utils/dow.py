@@ -93,9 +93,12 @@ class DOW:
             if all(arr is not None for arr in [other.Z, other.Y, self._Z, self._Y]):
                 other.to_vector()
                 self.to_vector()
+
                 return (self.X == other.X).all() and \
                         (self.Y == other.Y).all() and \
+                        (len(self.Z) == len(other.Z)) and \
                         (self.Z == other.Z).all()
+
         return False
 
     def __ne__(self, other) -> bool:

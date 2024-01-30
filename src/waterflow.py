@@ -1,46 +1,21 @@
-from src.utils.get_data import random_data
+from collections import Counter
+
 from src.larp import LARP
+from src.local_search import local_search, erosion
 
+from src.utils.dow import DOW
 from src.utils.clouds_generator import clouds_generator
-from src.local_search import local_search
 
 
-if __name__ == '__main__':
+def waterflow_alg(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -> DOW:
 
-    k_vehicles = 5
-    Q_vehicle_capacity = 2000
-    facility = 'F'
-
-    n_fields_instances = 100
-    m_storages_instances = 20
-
-    use = (n_fields_instances, m_storages_instances)
-    fields, storages, households, f, q, fs_dist, cs_dist, d = random_data(*use)
-
-    larp = LARP(facility, 
-                k_vehicles, 
-                Q_vehicle_capacity, 
-                fields, 
-                storages, 
-                households, 
-                f, 
-                q, 
-                fs_dist, 
-                cs_dist, 
-                d)
-    
-    larp.build()
-
-    dows = dict()
+    optimal_dows = dict()
     P0_list = list()
     UE_list = list()
     E_list = list()
 
     excluded_list = list()
     discarded_list = list()
-
-    max_cloud = 10
-    max_pop = 10
 
     clouds = clouds_generator(max_cloud, larp, max_pop)
 
@@ -52,5 +27,29 @@ if __name__ == '__main__':
             local_optimum, neighbours, excluded_dows, discarded_dows = local_search(larp, dow)
             excluded_list.extend(excluded_dows)
             discarded_list.extend(discarded_dows)
-            dows[local_optimum] = neighbours
+            UE_list.append(local_optimum) # for erosion process
+        
+            if local_optimum not in optimal_dows.keys():
+                optimal_dows[local_optimum] = neighbours
+        
+        dow_occurances = Counter(UE_list)
+        dow_occurances = [dow for dow, occurs in dow_occurances.items() if occurs >= min_ero]
+        for dow in dow_occurances:
             
+            neighbours = optimal_dows[dow]
+
+            tmp = erosion(larp, dow, neighbours, max_UIE,
+                excluded_list, discarded_list, optimal_dows, 
+                P0_list, UE_list, E_list)
+            
+            dow_optimum, _, excluded_list, discarded_list, \
+                excluded_list, discarded_list, optimal_dows, UE_list, E_list = tmp
+            P0_list.append(dow_optimum)
+    
+    if P0_list:
+        obj_vals = [dow.obj_value for dow in P0_list]
+        idx_min = obj_vals.index(min(obj_vals))
+        best_solution = P0_list[idx_min]
+        return best_solution
+    return None
+                

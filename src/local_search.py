@@ -1,6 +1,6 @@
 from src.larp import LARP
 from src.utils.dow import DOW
-# from src.utils.opt_1_neighbourhood import opt_1
+from src.utils.opt_1_neighbourhood import opt_1
 from src.utils.swap_neighbourhood import swap
 from src.utils.sort_topology import sort_by_topology
 
@@ -14,19 +14,27 @@ def local_search(larp:LARP, dow:DOW) -> tuple:
     
     while True:
 
-        # solution, neighbours, no_feasible_dows = opt_1(larp, local_optimum)
-        solution, neighbours, no_feasible_dows = swap(larp, local_optimum)
+        solution, neighbours, no_feasible_dows = opt_1(larp, local_optimum)
         discarded_dows.extend(no_feasible_dows)
 
-        # print('local_search | solution in loop:', solution)
-        # print('local_search | local_optimum in loop:', local_optimum)
-
-        if solution == local_optimum:
-            break
+        if solution != local_optimum:
+            excluded_dows.extend([local_optimum])
+            excluded_dows.extend(neighbours)
+            local_optimum = solution
+            continue
         
-        excluded_dows.extend([local_optimum])
-        excluded_dows.extend(neighbours)
-        local_optimum = solution
+        while True:
+            solution, neighbours, no_feasible_dows = swap(larp, local_optimum)
+            discarded_dows.extend(no_feasible_dows)
+
+            if solution == local_optimum:
+                break
+
+            excluded_dows.extend([local_optimum])
+            excluded_dows.extend(neighbours)
+            local_optimum = solution
+        
+        break
     
     return local_optimum, neighbours, excluded_dows, discarded_dows
 
@@ -75,6 +83,9 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
                     UE_list.remove(local_optimum)
                     E_list.append(local_optimum)
                     break
+                else:
+                    print('local solution is not better than the local optimum.')
+                    print('let\'s see if another tentative is possible searching from local solution...')
                 
                 curr_dow = local_solution
 

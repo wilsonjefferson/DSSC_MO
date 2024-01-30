@@ -64,6 +64,7 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
 def _change_status_to_close(larp, constrs, dow, tmp_X, idx) -> tuple:
 
     tmp_dow = deepcopy(dow)
+    tmp_dow.to_vector()
     if idx+1 < len(tmp_dow.Z):
         if tmp_dow.Z[idx-1] == tmp_dow.Z[idx+1]:
             tmp_dow.Z = np.delete(tmp_dow.Z, idx+1)
@@ -143,11 +144,11 @@ def _change_status_to_close(larp, constrs, dow, tmp_X, idx) -> tuple:
         dows = []
 
     if dow.obj_value <= candidate.obj_value:
-        print('local optimum is dow!')
+        # print('local optimum is dow!')
         local_optimum = dow
         local_optimum.to_vector()
     else:
-        print('local optimum is candidate!')
+        # print('local optimum is candidate!')
         local_optimum = candidate
         dows = list(dows)
         dows.remove(candidate)
@@ -230,11 +231,11 @@ def _change_status_to_open(larp, constrs, dow, tmp_X, idx) -> tuple:
         dows = []
 
     if dow.obj_value <= candidate.obj_value:
-        print('local optimum is dow!')
+        # print('local optimum is dow!')
         local_optimum = dow
         local_optimum.to_vector()
     else:
-        print('local optimum is candidate!')
+        # print('local optimum is candidate!')
         local_optimum = candidate
         dows = list(dows)
         dows.remove(candidate)
