@@ -76,14 +76,14 @@ def swap(larp:LARP, dow:DOW) -> tuple:
 
     # print('neighbours:', neighbours)
     larp = remove_constrs(larp, constrs)
-
-    candidate = dow
+    
     if neighbours:
         dows, obj_vals = zip(*neighbours)
         obj_vals = [dow.obj_value for dow in dows]
         idx_min = obj_vals.index(min(obj_vals))
         candidate = dows[idx_min]
     else:
+        candidate = dow
         dows = []
 
     if dow.obj_value <= candidate.obj_value:

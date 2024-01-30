@@ -13,6 +13,8 @@ def local_search(larp:LARP, dow:DOW) -> tuple:
     neighbours = None
     
     while True:
+
+        # solution, neighbours, no_feasible_dows = opt_1(larp, local_optimum)
         solution, neighbours, no_feasible_dows = swap(larp, local_optimum)
         discarded_dows.extend(no_feasible_dows)
 
@@ -24,8 +26,8 @@ def local_search(larp:LARP, dow:DOW) -> tuple:
         
         excluded_dows.extend([local_optimum])
         excluded_dows.extend(neighbours)
-        
         local_optimum = solution
+    
     return local_optimum, neighbours, excluded_dows, discarded_dows
 
 def dow_seen(dow:DOW, excluded_list:list, discarded_list:list, UE_list:list, E_list:list) -> bool:
@@ -59,7 +61,7 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
             local_solution, local_neighbours, excluded_dows, discarded_dows = local_search(larp, curr_dow)
             excluded_list.extend(excluded_dows)
             discarded_list.extend(discarded_dows)
-
+            
             seen = dow_seen(local_solution, excluded_list, discarded_list, UE_list, E_list)
             # print('dow already seen?', seen)
             
@@ -72,8 +74,8 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
                     UE_list.append(local_solution)                   
                     UE_list.remove(local_optimum)
                     E_list.append(local_optimum)
-
-                    tentative = max_UIE # stop while-loop
+                    break
+                
                 curr_dow = local_solution
 
             elif local_solution == local_optimum:
@@ -82,10 +84,13 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
                 curr_dow = get_next_neighbour(local_neighbours, excluded_list, 
                         discarded_list, UE_list, E_list)
 
-                if curr_dow is None:
+                if curr_dow:
                     print('aligible neighbour is found!')
                     print('continue erosion process with eligible neighbour...')
-                    tentative = max_UIE # stop while-loop
+                else:
+                    print('no aligible neighbour is found.')
+                    local_solution = None
+                    break
             else:
                 # local_solution was already seen and it is not the local_optimum.
                 # So, it means local_solution belongs to one of the following list:
