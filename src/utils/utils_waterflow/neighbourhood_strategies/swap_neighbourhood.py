@@ -4,10 +4,8 @@ from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import (fit, 
-                                      add_constrs, 
-                                      modify_rhs_constrs, 
-                                      remove_constrs)
+from src.utils.gurobipy_utils import remove_constrs
+from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
 
 
 def swap(larp:LARP, dow:DOW) -> tuple:
@@ -42,88 +40,49 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         List of no feasible solutions
     '''
 
-    dow.to_matrix()
+    dow.to_vector()
+    print('dow:', dow)
 
     neighbours = list()
     discarded_dows = list()
-    constrs = None
+    constrs = dict()
 
     X_idx_zeros = np.nonzero(dow.X == 0)[0]
     X_idx_nonzeros = np.nonzero(dow.X)[0]
 
-    # print('X_idx_zeros:', X_idx_zeros)
-    # print('X_idx_nonzeros:', X_idx_nonzeros)
+    if len(X_idx_zeros) == 0 or len(X_idx_nonzeros) == 0:
+        return dow, list(), discarded_dows
     
     cartesian = product(X_idx_zeros, X_idx_nonzeros)
     for zero_idx, nonzero_idx in cartesian:
-        # print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
 
+        zero_idx += 1
+        nonzero_idx += 1
+        print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
+
+        # adjust X decision variable
         tmp_X = deepcopy(dow.X)
-        tmp_X[zero_idx] = 1
-        tmp_X[nonzero_idx] = 0
-                   
+        tmp_X[zero_idx-1] = 1
+        tmp_X[nonzero_idx-1] = 0
+
+        # adjust Y decision variable
         tmp_Y = deepcopy(dow.Y)
-        nonzero_rows = np.nonzero(dow.Y[:,nonzero_idx])[0]
-        
-        # print('Y nonzero_rows:', nonzero_rows)
-        tmp_Y[nonzero_rows, zero_idx] = 1
-        tmp_Y[nonzero_rows, nonzero_idx] = 0
+        reassign_indexes = np.nonzero(tmp_Y == nonzero_idx)[0]
+        tmp_Y[reassign_indexes] = zero_idx
+        print('tmp_Y:', tmp_Y)
 
+        # adjust Z decision variable
         tmp_Z = deepcopy(dow.Z)
-        nonzero_row = np.nonzero(dow.Z[:,nonzero_idx])[0]
-        # print('Z nonzero_row:', nonzero_row)
-        tmp_Z[nonzero_row, zero_idx] = 1
-        tmp_Z[nonzero_row, nonzero_idx] = 0
+        reassign_indexes = np.nonzero(tmp_Z == nonzero_idx)[0]
+        tmp_Z[reassign_indexes] = zero_idx
+        print('tmp_Z:', tmp_Z)
 
-        nonzero_column = np.nonzero(dow.Z[nonzero_idx,:])[0]
-        # print('Z nonzero_column:', nonzero_column)
-        tmp_Z[zero_idx, nonzero_column] = 1
-        tmp_Z[nonzero_idx, nonzero_column] = 0
-
-        neighbour_dow = DOW(dow.m_storages, dow.n_fields, dow.k_vehicles)
-        neighbour_dow.X = tmp_X
-        neighbour_dow.Y = tmp_Y
-        neighbour_dow.Z = tmp_Z
-
-        # print('neighbour dow:', neighbour_dow)
-
-        if constrs:
-            # print('modify existing constraints')
-            modify_rhs_constrs(neighbour_dow, constrs)
-        else:
-            # print('add new constraints')
-            larp, constrs = add_constrs(larp, neighbour_dow)
-
-        larp, is_fit = fit(larp, neighbour_dow)
-        neighbour_dow.to_vector()
-        
-        if is_fit:
-            # print('neighbour dow is FEASIBLE')
-            neighbours.append([neighbour_dow, neighbour_dow.obj_value])
-        else:
-            # print('neighbour dow is NOT FEASIBLE')
-            discarded_dows.append(neighbour_dow)
+        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                          tmp_X, tmp_Y, tmp_Z, larp, constrs, 
+                          neighbours, discarded_dows)
 
     # print('neighbours:', neighbours)
     larp = remove_constrs(larp, constrs)
     
-    if neighbours:
-        dows, obj_vals = zip(*neighbours)
-        obj_vals = [dow.obj_value for dow in dows]
-        idx_min = obj_vals.index(min(obj_vals))
-        candidate = dows[idx_min]
-    else:
-        candidate = dow
-        dows = []
-
-    if dow.obj_value <= candidate.obj_value:
-        # print('local optimum is dow!')
-        local_optimum = dow
-        local_optimum.to_vector()
-    else:
-        # print('local optimum is candidate!')
-        local_optimum = candidate
-        dows = list(dows)
-        dows.remove(candidate)
-    
+    local_optimum, dows = optimality_check(dow, neighbours)
     return local_optimum, dows, discarded_dows
