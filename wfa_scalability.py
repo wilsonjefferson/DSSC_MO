@@ -14,14 +14,14 @@ if __name__ == '__main__':
     backup = os.getcwd() + '\\DSSC_MO\\backup\\wfa_scalability.pkl'
     print('backup:', backup)
 
-    # LARP paramenters
-    n_iterations = 10
+    # LARP model paramenters
+    n_iterations = 1
     iterations = range(n_iterations)
-    n_fields_instances = [100, 300]
-    m_storages_instances = [10, 20, 30, 40]
-    k_vehicles_instances = [3, 6, 9, 12]
+    n_fields_instances = [5]
+    m_storages_instances = [4, 5, 6, 7]
+    k_vehicles_instances = [2]
 
-    Q_vehicle_capacity = 2000
+    Q_vehicle_capacity = 100
     facility = 'F'
 
     # WFA parameters
@@ -52,8 +52,10 @@ if __name__ == '__main__':
     # NOTE: dropwhile filter those points of the cartesian variable
     # which are already evaluated
     for n_f, m_s, itr in dropwhile(lambda x: x in computed, cartesian):
-        k_v = m_storages_instances.index(m_s)
-        k_v = k_vehicles_instances[k_v]
+        # k_v = m_storages_instances.index(m_s)
+        # k_vehicles_instances[k_v]
+        
+        k_v = k_vehicles_instances[0]
 
         while True:
             print('n_f:', n_f, 'm_s:', m_s, 'k_v:', k_v, 'instance:', itr)
@@ -99,13 +101,14 @@ if __name__ == '__main__':
             start_opt = timer()
             best_solution = waterflow(larp, max_cloud, max_pop, max_UIE, min_ero)
             end_opt = timer()
-            print('Optimization time:', end_opt-start_opt)
+            opt_time = end_opt-start_opt
+            print('Optimization time:', opt_time)
 
             if best_solution is None:
                 print('problem is INFEASIBLE')
             else:
                 # NOTE: scalability = [num. of fields, num. of storages, num. of k_vehicles, iter, build_time (sec), opt_time (sec)]
-                scalability.append([n_f, m_s, k_v, itr, build_time, larp.get_execution_time()])
+                scalability.append([n_f, m_s, k_v, itr, build_time, opt_time])
 
                 # save updated information in scalability
                 with open(backup, 'wb') as file:

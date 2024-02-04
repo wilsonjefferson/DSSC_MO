@@ -11,7 +11,7 @@ from src.larp import LARP
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\larp_scalability2.pkl'
+    backup = os.getcwd() + '\\DSSC_MO\\backup\\larp_scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters

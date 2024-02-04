@@ -130,15 +130,19 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
         discarded_dows:list
         List of no feasible solutions
     '''
+
+    idx+=1
     
     # a no-really elegant way to adjust a copy of dow.Z
     # to match the changes from dow.X 
     tmp_dow = deepcopy(dow)
     tmp_dow.to_vector()
-    if idx+1 < len(tmp_dow.Z):
-        if tmp_dow.Z[idx-1] == tmp_dow.Z[idx+1]:
-            tmp_dow.Z = np.delete(tmp_dow.Z, idx+1)
-    tmp_dow.Z = np.delete(tmp_dow.Z, idx)
+
+    unwanted_value_idx = np.nonzero(tmp_dow.Z == idx)[0]
+    if unwanted_value_idx+1 < len(tmp_dow.Z):
+        if tmp_dow.Z[unwanted_value_idx-1] == tmp_dow.Z[unwanted_value_idx+1]:
+            tmp_dow.Z = np.delete(tmp_dow.Z, unwanted_value_idx+1)
+    np.delete(tmp_dow.Z, unwanted_value_idx)
     if tmp_dow.Z[-1] == 0:
         tmp_dow.Z = np.delete(tmp_dow.Z, -1)
     tmp_dow.to_matrix()
@@ -153,6 +157,8 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
     # tmp_Z[:,idx] = 0
 
     # ----------------------------------
+    
+    idx -= 1
 
     # determine list of dow.Y where at least one value is nonzero
     columns_nozero = [dow.Y[:, j].any() if j != idx else False for j in range(len(dow.X))]
@@ -199,8 +205,13 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
         # print('neighbour dow:', neighbour_dow)
 
         # modify constraints according the new dow generated
+        # print('modify RHS constraints with discovered neighbour...')
         modify_rhs_constrs(neighbour_dow, constrs)
+        # print('change completed')
+        # print('fitting LARP model...')
         larp, is_fit = fit(larp, neighbour_dow)
+        # print('fitting completed')
+
         neighbour_dow.to_vector()
 
         if is_fit:
@@ -321,9 +332,12 @@ def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, i
         neighbour_dow.Z = tmp_Z
 
         # print('neighbour dow:', neighbour_dow)
-
+        # print('modify RHS constraints with discovered neighbour...')
         modify_rhs_constrs(neighbour_dow, constrs)
+        # print('change completed')
+        # print('fitting LARP model...')
         larp, is_fit = fit(larp, neighbour_dow)
+        # print('fitting completed')
         neighbour_dow.to_vector()
 
         if is_fit:

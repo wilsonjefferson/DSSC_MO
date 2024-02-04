@@ -77,7 +77,7 @@ def waterflow(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -
                 P0_list, UE_list, E_list)
             
             dow_optimum, _, excluded_list, discarded_list, \
-                excluded_list, discarded_list, optimal_dows, UE_list, E_list = tmp
+                optimal_dows, UE_list, E_list = tmp
             P0_list.append(dow_optimum) # store (new) optimal position in P0
     
     if P0_list:
