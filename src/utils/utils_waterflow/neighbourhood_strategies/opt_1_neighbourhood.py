@@ -1,5 +1,4 @@
 import numpy as np
-from sympy.utilities.iterables import multiset_permutations
 from itertools import product
 from copy import deepcopy
 
@@ -55,8 +54,10 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
     for idx in range(len(dow.X)):
         tmp_X = deepcopy(dow.X)
         tmp_X[idx] = not dow.X[idx]
+        dow_status_to_close = tmp_X[idx] == 0
+        idx += 1 # adjust index of X to match the values in Y and Z
 
-        if tmp_X[idx] == 0: # binary value is 0
+        if dow_status_to_close: # binary value is 0
             # change binary status to 1 (open)
             tmp = _change_status_to_close(larp, constrs, dow, tmp_X, idx)
         else: # binary value is 1
@@ -131,13 +132,14 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
         List of no feasible solutions
     '''
 
-    idx+=1
+    discarded_dows = list()
+    tmp_neighbours = list()
     
     # a no-really elegant way to adjust a copy of dow.Z
     # to match the changes from dow.X 
     tmp_dow = deepcopy(dow)
-    tmp_dow.to_vector()
 
+    # adapt decision variable Z
     unwanted_value_idx = np.nonzero(tmp_dow.Z == idx)[0]
     if unwanted_value_idx+1 < len(tmp_dow.Z):
         if tmp_dow.Z[unwanted_value_idx-1] == tmp_dow.Z[unwanted_value_idx+1]:
@@ -145,69 +147,33 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
     np.delete(tmp_dow.Z, unwanted_value_idx)
     if tmp_dow.Z[-1] == 0:
         tmp_dow.Z = np.delete(tmp_dow.Z, -1)
-    tmp_dow.to_matrix()
 
-    dow.to_matrix()
-    # print('status to close | dow:', dow)
+    # adapt decision variable Y
+    indexes_positions_of_idx = np.nonzero(dow.Y == idx)
+    uniques = np.unique(dow.Y)
+    acceptable_values = np.nonzero(uniques != idx)
+    acceptable_values = uniques[acceptable_values]
 
-    # ----------------------------------
+    cartesian = product(acceptable_values, repeat=len(indexes_positions_of_idx))
 
-    # tmp_Z = deepcopy(dow.Z)
-    # tmp_Z[idx,:] = 0
-    # tmp_Z[:,idx] = 0
-
-    # ----------------------------------
-    
-    idx -= 1
-
-    # determine list of dow.Y where at least one value is nonzero
-    columns_nozero = [dow.Y[:, j].any() if j != idx else False for j in range(len(dow.X))]
-    colms_idx =  [j for j in range(len(columns_nozero)) if columns_nozero[j]]
-    #print('colms_idx:', colms_idx)
-
-    n_cols = len(colms_idx)
-    # print('n_cols:', n_cols)
-
-    column = dow.Y[:, idx]
-    rows_idx = np.nonzero(column == 1)[0].tolist()
-    # print('rows_idx:', rows_idx)
-
-    n_rows = len(rows_idx)
-    # print('n_rows:', n_rows)
-
-    tmp_Y = deepcopy(dow.Y)
-    tmp_Y[rows_idx, idx] = 0
-    
-    row = np.zeros((n_cols, ))
-    row[0] = 1
-
-    # all possible permutation of values in row
-    rows_perm = multiset_permutations(row)
-    # print('rows_perm:', rows_perm)
-
-    discarded_dows = list()
-    tmp_neighbours = list()
-
-    # all combination of all possible rows
-    cartesian = product(rows_perm, repeat=n_rows)
-    for prod in cartesian:
-        prod = np.array(prod).reshape((n_rows, n_cols))
-        # print('prod:', prod)
-        prod_Y = deepcopy(tmp_Y)
-        prod_Y[np.ix_(rows_idx, colms_idx)] = prod
-        # print('prod_Y:', prod_Y)
+    for disp in cartesian:
+        tmp_dow.Y[indexes_positions_of_idx] = disp
+        tmp_Y = deepcopy(tmp_dow.Y)
 
         neighbour_dow = DOW(dow.m_storages, dow.n_fields, dow.k_vehicles)
         neighbour_dow.X = tmp_X
-        neighbour_dow.Y = prod_Y
+        neighbour_dow.Y = tmp_Y
         neighbour_dow.Z = tmp_dow.Z
 
         # print('neighbour dow:', neighbour_dow)
+
+        neighbour_dow.to_matrix()
 
         # modify constraints according the new dow generated
         # print('modify RHS constraints with discovered neighbour...')
         modify_rhs_constrs(neighbour_dow, constrs)
         # print('change completed')
+        
         # print('fitting LARP model...')
         larp, is_fit = fit(larp, neighbour_dow)
         # print('fitting completed')
@@ -280,64 +246,41 @@ def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, i
         List of no feasible solutions
     '''
 
-    # ----------------------------------
-    dow.to_matrix()
-    # print('status to open | dow:', dow)
-
-    tmp_Z = deepcopy(dow.Z)
-
-    F_last_pos = np.nonzero(tmp_Z[tmp_Z.shape[0]-1, :] == 1)[0][-1]
-    last_route = list()
-
-    last_route.append(tmp_Z.shape[0]-1)
-    while F_last_pos != tmp_Z.shape[1]-1:
-        F_last_pos = np.nonzero(tmp_Z[F_last_pos, :] == 1)[0][0]
-        last_route.append(F_last_pos)
-
-    last_position = last_route[-2]   
-
-    tmp_Z[last_position, idx] = 1
-    tmp_Z[last_position, tmp_Z.shape[1]-1] = 0
-    tmp_Z[idx, tmp_Z.shape[1]-1] = 1 
-
-    # ----------------------------------
-
-    tmp_Y = deepcopy(dow.Y)
-    n_rows, n_cols = tmp_Y.shape
-    # print('n_rows:', n_rows)
-
     discarded_dows = list()
     tmp_neighbours = list()
 
-    X_idx = [i for i in np.nonzero(tmp_X)[0]]
-    # print('X_idx:', X_idx)
+    # adapt decision variable Z
+    tmp_Z = deepcopy(dow.Z)
 
-    n_cols = len(X_idx)
-    # print('n_cols:', n_cols)
-    
-    row = np.zeros((n_cols,))
-    row[0] = 1
+    if len(tmp_Z) == 0 or tmp_Z is None:
+        tmp_Z = np.array([0, idx])
+    else:
+        tmp_Z = np.append(tmp_Z, idx)
 
-    rows_perm = multiset_permutations(row)
-    # print('rows_perm:', rows_perm)
+    # adapt decision variable Y
+    uniques = np.unique(dow.Y)
+    uniques = np.append(uniques, idx)
+    cartesian = product(uniques, repeat=len(dow.Y))
 
-    cartesian = product(rows_perm, repeat=n_rows)
-    for prod in cartesian:
-        prod = np.array(prod).reshape((n_rows, n_cols))
-        tmp_Y[:, X_idx] = prod
+    for disp in cartesian:
+        tmp_Y = np.array(disp)
 
         neighbour_dow = DOW(dow.m_storages, dow.n_fields, dow.k_vehicles)
         neighbour_dow.X = tmp_X
         neighbour_dow.Y = tmp_Y
         neighbour_dow.Z = tmp_Z
 
+        neighbour_dow.to_matrix()
         # print('neighbour dow:', neighbour_dow)
+
         # print('modify RHS constraints with discovered neighbour...')
         modify_rhs_constrs(neighbour_dow, constrs)
         # print('change completed')
+
         # print('fitting LARP model...')
         larp, is_fit = fit(larp, neighbour_dow)
         # print('fitting completed')
+
         neighbour_dow.to_vector()
 
         if is_fit:
