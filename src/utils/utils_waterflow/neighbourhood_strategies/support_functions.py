@@ -58,7 +58,7 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
     neighbour_dow.to_matrix()
     # print('neighbour dow:', neighbour_dow)
 
-    if len(constrs) == 0:
+    if len(constrs) != 0:
         # print('modify RHS constraints with discovered neighbour...')
         modify_rhs_constrs(neighbour_dow, constrs)
     else:
