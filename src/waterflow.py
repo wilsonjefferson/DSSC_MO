@@ -49,10 +49,13 @@ def waterflow(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -
 
     for cloud in clouds:
         # cloud generate a set of dow-of-water (dow)
+        # print('cloud - start raining...')
         rainfall, discarded_dows = cloud.make_rain(E_list, discarded_list)
         discarded_list.extend(discarded_dows) # no feasible dows met during dows generation
+        # print('cloud - stop raining.')
         
         ### Exploration Phase ###
+        # print('start exploration...')
         for dow in rainfall:
             # gravity force push dow to a local optimal position (or solution)
             local_optimum, neighbours, excluded_dows, discarded_dows = local_search(larp, dow)
@@ -62,11 +65,14 @@ def waterflow(larp:LARP, max_cloud:int, max_pop:int, max_UIE:int, min_ero:int) -
         
             if local_optimum not in optimal_dows.keys():
                 optimal_dows[local_optimum] = neighbours # store local optimal and his neighbour positions
+        # print('exploration completed.')
         
         # erosion condition: a certain position is eligible for the erosion
         # process is a minimum number of min_ero dows converged to the same position
+        # print('verify erosion condition...')
         dow_occurances = Counter(UE_list)
         dow_occurances = [dow for dow, occurs in dow_occurances.items() if occurs >= min_ero]
+        # print('eligible dows:', len(dow_occurances))
         for dow in dow_occurances:
             
             neighbours = optimal_dows[dow]

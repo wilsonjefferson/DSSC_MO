@@ -127,6 +127,7 @@ class CLOUD:
                     break
                 
                 discarded_dows.append(dow)
+                # print('is_fit:', is_fit, ' pass add:', pass_additional_constr)
                 # print('iter:', i, ' --> DOW NOT FEASIBLE', sep=' ')
                 larp.model.reset(0)
 

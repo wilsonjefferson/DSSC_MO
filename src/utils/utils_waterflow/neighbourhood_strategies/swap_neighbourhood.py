@@ -41,7 +41,7 @@ def swap(larp:LARP, dow:DOW) -> tuple:
     '''
 
     dow.to_vector()
-    print('dow:', dow)
+    # print('dow:', dow)
 
     neighbours = list()
     discarded_dows = list()
@@ -58,7 +58,7 @@ def swap(larp:LARP, dow:DOW) -> tuple:
 
         zero_idx += 1
         nonzero_idx += 1
-        print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
+        # print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
 
         # adjust X decision variable
         tmp_X = deepcopy(dow.X)
@@ -69,15 +69,15 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         tmp_Y = deepcopy(dow.Y)
         reassign_indexes = np.nonzero(tmp_Y == nonzero_idx)[0]
         tmp_Y[reassign_indexes] = zero_idx
-        print('tmp_Y:', tmp_Y)
+        # print('tmp_Y:', tmp_Y)
 
         # adjust Z decision variable
         tmp_Z = deepcopy(dow.Z)
         reassign_indexes = np.nonzero(tmp_Z == nonzero_idx)[0]
         tmp_Z[reassign_indexes] = zero_idx
-        print('tmp_Z:', tmp_Z)
+        # print('tmp_Z:', tmp_Z)
 
-        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
+        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
                           tmp_X, tmp_Y, tmp_Z, larp, constrs, 
                           neighbours, discarded_dows)
 

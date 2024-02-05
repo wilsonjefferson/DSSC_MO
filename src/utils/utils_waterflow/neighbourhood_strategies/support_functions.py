@@ -78,6 +78,8 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
         # print('neighbour dow is NOT FEASIBLE')
         discarded_dows.append(neighbour_dow)
     
+    return larp, constrs
+    
 def optimality_check(dow:DOW, neighbours:list) -> tuple:
     '''
         This is a support function to determine the local optimum.

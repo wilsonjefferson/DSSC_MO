@@ -52,10 +52,10 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
     for idx in range(len(dow.X)):
         tmp_X = deepcopy(dow.X)
         tmp_X[idx] = not dow.X[idx]
-        dow_status_to_close = tmp_X[idx] == 0
+        dow_new_status_to_close = tmp_X[idx] == 0
         idx += 1 # adjust index of X to match the values in Y and Z
 
-        if dow_status_to_close: # binary value is 0
+        if dow_new_status_to_close: # binary value is 0
             # change binary status to 1 (open)
             tmp = _change_status_to_close(larp, constrs, dow, tmp_X, idx)
         else: # binary value is 1
@@ -157,7 +157,7 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
     for disp in cartesian:
         tmp_dow.Y[indexes_positions_of_idx] = disp
         tmp_Y = deepcopy(tmp_dow.Y)
-        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
+        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
                           tmp_X, tmp_Y, tmp_dow.Z, larp, constrs, 
                           tmp_neighbours, discarded_dows)
 
@@ -218,7 +218,7 @@ def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, i
 
     for disp in cartesian:
         tmp_Y = np.array(disp)
-        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
+        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
                           tmp_X, tmp_Y, tmp_Z, larp, constrs, 
                           tmp_neighbours, discarded_dows)
 
