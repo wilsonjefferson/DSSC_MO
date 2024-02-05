@@ -170,7 +170,7 @@ class LARP:
     def inputs(self):
         return {'facility': self._facility,
             'households': self._households,
-            'k_vehiccles': self._k_vehicles,
+            'k_vehicles': self._k_vehicles,
             'Q_vehicle_capacity': self._Q_vehicle_capacity,
             'fields': self._fields,
             'storages': self._storages,

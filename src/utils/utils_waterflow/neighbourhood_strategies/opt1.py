@@ -8,13 +8,34 @@ from gurobipy import GRB
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
 from src.utils.gurobipy_utils import add_constrs, remove_constrs
-from src.utils.gurobipy_utils import modify_rhs_constrs
+from src.utils.gurobipy_utils import create_larp, modify_rhs_constrs
 
-from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import optimality_check
+from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
 
 
 N_PROCESSES = mp.cpu_count()
 
+
+
+def task_to_close(chunk:list, inputs:dict, dow:DOW, tmp_dow_Y:np.array, indexes_positions_of_idx:np.array, feasibility_params:list):
+    larp = create_larp(inputs)
+
+    dow.to_matrix()
+    larp, constrs = add_constrs(larp, dow)
+    dow.to_vector()
+
+    feasibility_params.insert(2, larp)
+    feasibility_params.insert(3, constrs)
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles]+feasibility_params
+
+    for disp in chunk:
+        tmp_dow_Y[indexes_positions_of_idx] = disp
+        tmp_Y = deepcopy(tmp_dow_Y)
+        feasibility_params.insert(4, tmp_Y)
+        feasibility_check(*feasibility_params)
+    
+    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed
+    print('done')
 
 class OPT1:
 
@@ -40,9 +61,6 @@ class OPT1:
 
     def search(self):
         # print('opt_1 | self._dow vector:', self._dow)
-        self._dow.to_matrix()
-        self.larp, self.constrs = add_constrs(self._larp, self._dow)
-        self._dow.to_vector()
         
         neighbours = list()
         discarded_list = list()
@@ -66,8 +84,6 @@ class OPT1:
             optimal_neighbours.append(good_neighbour)
             neighbours.extend(other_neighbours)
             discarded_list.extend(discarded_dows)
-
-        self.larp = remove_constrs(self.larp, self.constrs) # remove added constraints, no more needed
 
         if optimal_neighbours: # i.e. current optimal has a list of neighbour solutions
             # retrieve the best neighbour according the objective value
@@ -134,38 +150,43 @@ class OPT1:
         
         # a no-really elegant way to adjust a copy of dow.Z
         # to match the changes from dow.X 
-        self.tmp_dow = deepcopy(self._dow)
+        tmp_dow = deepcopy(self._dow)
 
         # adapt decision variable Z
-        unwanted_value_idx = np.nonzero(self.tmp_dow.Z == idx)[0]
-        if unwanted_value_idx+1 < len(self.tmp_dow.Z):
-            if self.tmp_dow.Z[unwanted_value_idx-1] == self.tmp_dow.Z[unwanted_value_idx+1]:
-                self.tmp_dow.Z = np.delete(self.tmp_dow.Z, unwanted_value_idx+1)
-        np.delete(self.tmp_dow.Z, unwanted_value_idx)
-        if self.tmp_dow.Z[-1] == 0:
-            self.tmp_dow.Z = np.delete(self.tmp_dow.Z, -1)
+        unwanted_value_idx = np.nonzero(tmp_dow.Z == idx)[0]
+        if unwanted_value_idx+1 < len(tmp_dow.Z):
+            if tmp_dow.Z[unwanted_value_idx-1] == tmp_dow.Z[unwanted_value_idx+1]:
+                tmp_dow.Z = np.delete(tmp_dow.Z, unwanted_value_idx+1)
+        np.delete(tmp_dow.Z, unwanted_value_idx)
+        if tmp_dow.Z[-1] == 0:
+            tmp_dow.Z = np.delete(tmp_dow.Z, -1)
 
         # adapt decision variable Y
-        self.indexes_positions_of_idx = np.nonzero(self._dow.Y == idx)
+        indexes_positions_of_idx = np.nonzero(self._dow.Y == idx)
         uniques = np.unique(self._dow.Y)
         acceptable_values = np.nonzero(uniques != idx)
         acceptable_values = uniques[acceptable_values]
 
-        cartesian = product(acceptable_values, repeat=len(self.indexes_positions_of_idx))
+        cartesian = list(product(acceptable_values, repeat=len(indexes_positions_of_idx)))
 
-        self.feasibility_params = [tmp_X, self.tmp_dow.Z, tmp_neighbours, discarded_dows]
+        chunks = [cartesian[x:x+N_PROCESSES] for x in range(0, len(cartesian), N_PROCESSES)]
+        feasibility_params = [tmp_X, tmp_dow.Z, tmp_neighbours, discarded_dows]
+
+        process_task = ft.partial(task_to_close, inputs=self.larp.inputs, dow=self._dow, tmp_dow_Y=tmp_dow.Y, 
+                                  indexes_positions_of_idx=indexes_positions_of_idx, 
+                                  feasibility_params=feasibility_params)
 
         print('start parallelization...')
         with mp.Pool(N_PROCESSES) as pool:
-            pool.map(self._task_to_close, cartesian)
+            pool.map(process_task, chunks)
         print('parallelization completed.')
 
         local_optimum, dows = optimality_check(self._dow, tmp_neighbours)
         return local_optimum, dows, discarded_dows 
     
     def _task_to_close(self, disp:tuple):
-        self.tmp_dow.Y[self.indexes_positions_of_idx] = disp
-        tmp_Y = deepcopy(self.tmp_dow.Y)
+        tmp_dow.Y[self.indexes_positions_of_idx] = disp
+        tmp_Y = deepcopy(tmp_dow.Y)
         self.feasibility_params.insert(1, tmp_Y)
         self.feasibility_check()
 
@@ -221,11 +242,15 @@ class OPT1:
         uniques = np.append(uniques, idx)
         cartesian = product(uniques, repeat=len(self._dow.Y))
             
-        self.feasibility_params = [tmp_X, tmp_Z, tmp_neighbours, discarded_dows]
+        feasibility_params = [tmp_X, tmp_Z, tmp_neighbours, discarded_dows]
+        # process_task = ft.partial(f, [], [], feasibility_params)
 
         print('start parallelization...')
         with mp.Pool(N_PROCESSES) as pool:
-            pool.map(self._task_to_open, cartesian)
+            self._dow.to_matrix()
+            self.larp, self.constrs = add_constrs(self._larp, self._dow)
+            self._dow.to_vector()
+            # pool.map(process_task, cartesian)
         print('parallelization completed.')
 
         local_optimum, dows = optimality_check(self._dow, tmp_neighbours)

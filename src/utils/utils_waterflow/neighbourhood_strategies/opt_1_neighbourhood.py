@@ -1,16 +1,13 @@
 import numpy as np
 import functools as ft
-
 import multiprocessing as mp
 
-# from pathos.multiprocessing import ProcessingPool 
-
 from itertools import product
-from copy import copy, deepcopy
+from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import add_constrs, remove_constrs
+from src.utils.gurobipy_utils import create_larp, add_constrs, remove_constrs
 from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
 
 
@@ -50,9 +47,6 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
     '''
 
     # print('opt_1 | dow vector:', dow)
-    dow.to_matrix()
-    larp, constrs = add_constrs(larp, dow)
-    dow.to_vector()
     
     neighbours = list()
     discarded_list = list()
@@ -66,18 +60,19 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
 
         if dow_new_status_to_close: # binary value is 0
             # change binary status to 1 (open)
-            tmp = _change_status_to_close(larp, constrs, dow, tmp_X, idx)
+            # tmp = _change_status_to_close(larp, constrs, dow, tmp_X, idx)
+            tmp = _change_status_to_close(larp, dow, tmp_X, idx)
+
         else: # binary value is 1
             # change binary status to 0 (close)
-            tmp = _change_status_to_open(larp, constrs, dow, tmp_X, idx)
+            # tmp = _change_status_to_close(larp, constrs, dow, tmp_X, idx)
+            tmp = _change_status_to_open(larp, dow, tmp_X, idx)
         
         good_neighbour, other_neighbours, discarded_dows = tmp
 
         optimal_neighbours.append(good_neighbour)
         neighbours.extend(other_neighbours)
         discarded_list.extend(discarded_dows)
-
-    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed
 
     if optimal_neighbours: # i.e. current optimal has a list of neighbour solutions
         # retrieve the best neighbour according the objective value
@@ -103,7 +98,7 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
     
     return local_optimum, dows, discarded_list
 
-def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
+def _change_status_to_close(larp:LARP, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
     '''
         If change status from 1 (open) to 0 (close), following routine
         is executed to adjust Y and Z attributes and generate new dows.
@@ -161,44 +156,50 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
     acceptable_values = np.nonzero(uniques != idx)
     acceptable_values = uniques[acceptable_values]
 
-    cartesian = product(acceptable_values, repeat=len(indexes_positions_of_idx))
+    cartesian = list(product(acceptable_values, repeat=len(indexes_positions_of_idx)))
 
-    larp_shallow = copy(larp)
-    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                        tmp_X, tmp_dow.Z, larp_shallow, constrs, 
-                        tmp_neighbours, discarded_dows]
-    
-    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                        tmp_X, tmp_dow.Z, tmp_neighbours, discarded_dows, constrs]
-    
-    process_task = ft.partial(f, 
-                    indexes_positions_of_idx=indexes_positions_of_idx, 
-                    tmp_dow_Y=tmp_dow.Y,
-                    feasibility_params=feasibility_params)
+    chunks = [cartesian[x:x+N_PROCESSES] for x in range(0, len(cartesian), N_PROCESSES)]
+    feasibility_params = [tmp_X, tmp_dow.Z, tmp_neighbours, discarded_dows]
+
+    process_task = ft.partial(task_to_close, inputs=larp.inputs, dow=dow, tmp_dow_Y=tmp_dow.Y, 
+                                indexes_positions_of_idx=indexes_positions_of_idx, 
+                                params=feasibility_params)
 
     print('start parallelization...')
     with mp.Pool(N_PROCESSES) as pool:
-    # with ProcessingPool() as pool:
-        pool.map(process_task, cartesian)
+        pool.map(process_task, chunks)
     print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
 
-def f(disp:tuple, indexes_positions_of_idx:tuple, tmp_dow_Y:np.array, feasibility_params:list):
-    print('disp:', disp)
-    print('indexes_positions_of_idx:', indexes_positions_of_idx)
-    print('tmp_dow_Y:', tmp_dow_Y)
-    print('feasibility_params:', len(feasibility_params))
-    exit()
+def task_to_close(chunk:list, inputs:dict, dow:DOW, tmp_dow_Y:np.array, indexes_positions_of_idx:np.array, params:list):
+    larp = create_larp(inputs)
 
-def task_to_close(disp:tuple, indexes_positions_of_idx:tuple, tmp_dow_Y:np.array, feasibility_params:list):
-    tmp_dow_Y[indexes_positions_of_idx] = disp
-    tmp_Y = deepcopy(tmp_dow_Y)
-    feasibility_params.insert(4, tmp_Y)
-    feasibility_check(*feasibility_params)
+    dow.to_matrix()
+    larp, constrs = add_constrs(larp, dow)
+    dow.to_vector()
 
-def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
+    feasibility_params = deepcopy(params)
+    feasibility_params.insert(2, larp)
+    feasibility_params.insert(3, constrs)
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles]+feasibility_params
+    feasibility_params.insert(4, None)
+
+    print('close | feasibility_params:', len(feasibility_params))
+
+    for disp in chunk:
+        tmp_dow_Y[indexes_positions_of_idx] = disp
+        tmp_Y = deepcopy(tmp_dow_Y)
+        feasibility_params[4] = tmp_Y
+        feasibility_check(*feasibility_params)
+    
+    print('neighbours:', len(feasibility_params[-2]))
+    print('discarded:', len(feasibility_params[-1]))
+    
+    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed
+
+def _change_status_to_open(larp:LARP, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
     '''
         If change status from 0 (close) to 0 (open), following routine
         is executed to adjust Y and Z attributes and generate new dows.
@@ -248,26 +249,43 @@ def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, i
     # adapt decision variable Y
     uniques = np.unique(dow.Y)
     uniques = np.append(uniques, idx)
-    cartesian = product(uniques, repeat=len(dow.Y))
-        
-    larp_shallow = copy(larp)
-    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                        tmp_X, tmp_Z, larp_shallow, constrs, 
-                        tmp_neighbours, discarded_dows]
+    cartesian = list(product(uniques, repeat=len(dow.Y)))
     
-    process_task = ft.partial(task_to_open,
-                    feasibility_params=feasibility_params)
+    chunks = [cartesian[x:x+N_PROCESSES] for x in range(0, len(cartesian), N_PROCESSES)]
+    feasibility_params = [tmp_X, tmp_Z, tmp_neighbours, discarded_dows]
+
+    process_task = ft.partial(task_to_open, inputs=larp.inputs, dow=dow,
+                                params=feasibility_params)
 
     print('start parallelization...')
     with mp.Pool(N_PROCESSES) as pool:
-    # with ProcessingPool() as pool:
-        pool.map(process_task, cartesian)
+        pool.map(process_task, chunks)
     print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
 
-def task_to_open(disp:tuple, feasibility_params:list):
-    tmp_Y = np.array(disp)
-    feasibility_params.insert(4, tmp_Y)
-    feasibility_check(*feasibility_params)
+def task_to_open(chunk:list, inputs:dict, dow:DOW, params:list):
+    larp = create_larp(inputs)
+
+    dow.to_matrix()
+    larp, constrs = add_constrs(larp, dow)
+    dow.to_vector()
+
+    feasibility_params = deepcopy(params)
+    feasibility_params.insert(2, larp)
+    feasibility_params.insert(3, constrs)
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles]+feasibility_params
+    feasibility_params.insert(4, None)
+
+    print('open | feasibility_params:', len(feasibility_params))
+
+    for disp in chunk:
+        tmp_Y = np.array(disp)
+        feasibility_params[4] = tmp_Y
+        feasibility_check(*feasibility_params)
+
+    print('tmp_neighbours:', len(feasibility_params[-2]))
+    print('discarded:', len(feasibility_params[-1]))
+
+    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed
