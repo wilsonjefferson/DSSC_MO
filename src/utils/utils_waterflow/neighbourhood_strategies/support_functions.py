@@ -70,6 +70,9 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
     else:
         # print('neighbour dow is NOT FEASIBLE')
         discarded_dows.append(neighbour_dow)
+
+    print('tmp_neighbours:', len(tmp_neighbours))
+    print('discarded_dows:', len(discarded_dows))
     
 def optimality_check(dow:DOW, neighbours:list) -> tuple:
     '''
