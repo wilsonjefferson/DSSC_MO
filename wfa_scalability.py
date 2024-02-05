@@ -18,7 +18,7 @@ if __name__ == '__main__':
     n_iterations = 1
     iterations = range(n_iterations)
     n_fields_instances = [5]
-    m_storages_instances = [4, 5, 6, 7]
+    m_storages_instances = [4]
     k_vehicles_instances = [2]
 
     Q_vehicle_capacity = 100
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # which are already evaluated
     for n_f, m_s, itr in dropwhile(lambda x: x in computed, cartesian):
         # k_v = m_storages_instances.index(m_s)
-        # k_vehicles_instances[k_v]
+        # k_v = k_vehicles_instances[k_v]
         
         k_v = k_vehicles_instances[0]
 

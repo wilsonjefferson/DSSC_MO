@@ -20,7 +20,15 @@ class LARP:
                  q:dict, 
                  fs_dist:pd.DataFrame, 
                  cs_dist:pd.DataFrame, 
-                 pivot_d:pd.DataFrame) -> None:
+                 pivot_d:pd.DataFrame,
+                 _X=None,
+                 _Y=None,
+                 _Z=None,
+                 _X_sol=None,
+                 _Y_sol=None,
+                 _Z_sol=None,
+                 _model=None
+                 ) -> None:
         '''
             This class rapresent the LARP model, it is composed
             by a set of class methods to define the decision variables,
@@ -67,13 +75,13 @@ class LARP:
             
         '''
 
-        self._X = None
-        self._Y = None
-        self._Z = None       
+        self._X = _X
+        self._Y = _Y
+        self._Z = _Z       
 
-        self._X_sol = None
-        self._Y_sol = None
-        self._Z_sol = None
+        self._X_sol = _X_sol
+        self._Y_sol = _Y_sol
+        self._Z_sol = _Z_sol
 
         self._facility = facility
         self._households = households
@@ -82,12 +90,12 @@ class LARP:
         self._Q_vehicle_capacity = Q_vehicle_capacity
 
         self._fields = fields
-        self.n_fields = len(fields)
+        self.n_fields = len(fields) if fields else 0
 
-        self.m_storages = len(storages)
-        self._storages = storages
+        self._storages = storages if storages else []
+        self.m_storages = len(storages) if storages else 0
         
-        self.J_0 = storages + [facility]
+        self.J_0 = self._storages + [facility]
 
         self._f = f
         self._q = q
@@ -101,13 +109,34 @@ class LARP:
         self.idx_to_storages = dict(zip(range(self.m_storages), storages))
         self.J_0_idx = dict(zip(self.J_0, range(len(self.J_0))))
 
-        # larp model
-        self._model = gp.Model('location_assignment_routing_problem') # general Gurobi mdodel
+        # general Gurobi mdodel
+        self._model = _model if _model else gp.Model('location_assignment_routing_problem')
         self._model.modelSense = GRB.MINIMIZE # decleare the problem as minimization problem
         self._model.setParam('outputFlag', 0)
 
     def __del__(self):
         self.dispose()
+
+    def __reduce__(self):
+        data = (self._facility, 
+                self._k_vehicles, 
+                self._Q_vehicle_capacity, 
+                self._fields, 
+                self._storages, 
+                self._households, 
+                self._f, 
+                self._q, 
+                self._fs_dist, 
+                self._cs_dist, 
+                self._pivot_d,
+                self._X,
+                self._Y,
+                self._Z,
+                self._X_sol,
+                self._Y_sol,
+                self._Z_sol,
+                self._model)
+        return (self.__class__, data)
 
     @property
     def X(self):
@@ -408,5 +437,6 @@ class LARP:
 
             None
         '''
-        self._model.dispose()
-        gp.disposeDefaultEnv()
+        if self._model:
+            self._model.dispose()
+            gp.disposeDefaultEnv()

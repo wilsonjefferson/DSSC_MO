@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import remove_constrs
+from src.utils.gurobipy_utils import add_constrs, remove_constrs
 from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
 
 
@@ -40,6 +40,8 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         List of no feasible solutions
     '''
 
+    dow.to_matrix()
+    larp, constrs = add_constrs(larp, dow)
     dow.to_vector()
     # print('dow:', dow)
 
@@ -54,6 +56,8 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         return dow, list(), discarded_dows
     
     cartesian = product(X_idx_zeros, X_idx_nonzeros)
+
+    # NOTE: parallelize for-loop
     for zero_idx, nonzero_idx in cartesian:
 
         zero_idx += 1
@@ -77,7 +81,7 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         tmp_Z[reassign_indexes] = zero_idx
         # print('tmp_Z:', tmp_Z)
 
-        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
+        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
                           tmp_X, tmp_Y, tmp_Z, larp, constrs, 
                           neighbours, discarded_dows)
 

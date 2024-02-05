@@ -1,5 +1,6 @@
 from src.larp import LARP
 from src.utils.utils_waterflow.dow import DOW
+# from src.utils.utils_waterflow.neighbourhood_strategies.opt1 import OPT1
 from src.utils.utils_waterflow.neighbourhood_strategies.opt_1_neighbourhood import opt_1
 from src.utils.utils_waterflow.neighbourhood_strategies.swap_neighbourhood import swap
 from src.utils.utils_waterflow.sort_topology import sort_by_topology
@@ -42,10 +43,14 @@ def local_search(larp:LARP, dow:DOW) -> tuple:
     excluded_dows = list()
     discarded_dows = list()
     neighbours = None
+
+    # opt1 = OPT1(larp, local_optimum)
     
     while True:
 
         solution, neighbours, no_feasible_dows = opt_1(larp, local_optimum)
+        # opt1.dow = local_optimum
+        # solution, neighbours, no_feasible_dows = opt1.search()
         discarded_dows.extend(no_feasible_dows)
 
         # until an improved solution is found, continue the local search

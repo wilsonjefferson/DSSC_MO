@@ -1,11 +1,20 @@
 import numpy as np
+import functools as ft
+
+import multiprocessing as mp
+
+# from pathos.multiprocessing import ProcessingPool 
+
 from itertools import product
-from copy import deepcopy
+from copy import copy, deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
 from src.utils.gurobipy_utils import add_constrs, remove_constrs
 from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
+
+
+N_PROCESSES = mp.cpu_count()
 
 
 def opt_1(larp:LARP, dow:DOW) -> tuple:
@@ -154,15 +163,40 @@ def _change_status_to_close(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, 
 
     cartesian = product(acceptable_values, repeat=len(indexes_positions_of_idx))
 
-    for disp in cartesian:
-        tmp_dow.Y[indexes_positions_of_idx] = disp
-        tmp_Y = deepcopy(tmp_dow.Y)
-        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                          tmp_X, tmp_Y, tmp_dow.Z, larp, constrs, 
-                          tmp_neighbours, discarded_dows)
+    larp_shallow = copy(larp)
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                        tmp_X, tmp_dow.Z, larp_shallow, constrs, 
+                        tmp_neighbours, discarded_dows]
+    
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                        tmp_X, tmp_dow.Z, tmp_neighbours, discarded_dows, constrs]
+    
+    process_task = ft.partial(f, 
+                    indexes_positions_of_idx=indexes_positions_of_idx, 
+                    tmp_dow_Y=tmp_dow.Y,
+                    feasibility_params=feasibility_params)
+
+    print('start parallelization...')
+    with mp.Pool(N_PROCESSES) as pool:
+    # with ProcessingPool() as pool:
+        pool.map(process_task, cartesian)
+    print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
+
+def f(disp:tuple, indexes_positions_of_idx:tuple, tmp_dow_Y:np.array, feasibility_params:list):
+    print('disp:', disp)
+    print('indexes_positions_of_idx:', indexes_positions_of_idx)
+    print('tmp_dow_Y:', tmp_dow_Y)
+    print('feasibility_params:', len(feasibility_params))
+    exit()
+
+def task_to_close(disp:tuple, indexes_positions_of_idx:tuple, tmp_dow_Y:np.array, feasibility_params:list):
+    tmp_dow_Y[indexes_positions_of_idx] = disp
+    tmp_Y = deepcopy(tmp_dow_Y)
+    feasibility_params.insert(4, tmp_Y)
+    feasibility_check(*feasibility_params)
 
 def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
     '''
@@ -215,12 +249,25 @@ def _change_status_to_open(larp:LARP, constrs:dict, dow:DOW, tmp_X:np.ndarray, i
     uniques = np.unique(dow.Y)
     uniques = np.append(uniques, idx)
     cartesian = product(uniques, repeat=len(dow.Y))
+        
+    larp_shallow = copy(larp)
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                        tmp_X, tmp_Z, larp_shallow, constrs, 
+                        tmp_neighbours, discarded_dows]
+    
+    process_task = ft.partial(task_to_open,
+                    feasibility_params=feasibility_params)
 
-    for disp in cartesian:
-        tmp_Y = np.array(disp)
-        larp, constrs = feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                          tmp_X, tmp_Y, tmp_Z, larp, constrs, 
-                          tmp_neighbours, discarded_dows)
+    print('start parallelization...')
+    with mp.Pool(N_PROCESSES) as pool:
+    # with ProcessingPool() as pool:
+        pool.map(process_task, cartesian)
+    print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
+
+def task_to_open(disp:tuple, feasibility_params:list):
+    tmp_Y = np.array(disp)
+    feasibility_params.insert(4, tmp_Y)
+    feasibility_check(*feasibility_params)

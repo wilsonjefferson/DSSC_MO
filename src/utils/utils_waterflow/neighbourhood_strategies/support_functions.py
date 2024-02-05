@@ -2,9 +2,7 @@ import numpy as np
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import (fit, 
-                                      add_constrs, 
-                                      modify_rhs_constrs)
+from src.utils.gurobipy_utils import fit, modify_rhs_constrs
 
 def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int, 
                        tmp_X:np.array, tmp_Y:np.array, tmp_Z:np.array, 
@@ -58,12 +56,7 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
     neighbour_dow.to_matrix()
     # print('neighbour dow:', neighbour_dow)
 
-    if len(constrs) != 0:
-        # print('modify RHS constraints with discovered neighbour...')
-        modify_rhs_constrs(neighbour_dow, constrs)
-    else:
-        # print('add new constraints')
-        larp, constrs = add_constrs(larp, neighbour_dow)
+    modify_rhs_constrs(neighbour_dow, constrs)
 
     # print('fitting LARP model...')
     larp, is_fit = fit(larp, neighbour_dow)
@@ -77,8 +70,6 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
     else:
         # print('neighbour dow is NOT FEASIBLE')
         discarded_dows.append(neighbour_dow)
-    
-    return larp, constrs
     
 def optimality_check(dow:DOW, neighbours:list) -> tuple:
     '''
