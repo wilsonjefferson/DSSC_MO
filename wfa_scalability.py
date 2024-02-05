@@ -15,11 +15,11 @@ if __name__ == '__main__':
     print('backup:', backup)
 
     # LARP model paramenters
-    n_iterations = 1
+    n_iterations = 5
     iterations = range(n_iterations)
     n_fields_instances = [5]
-    m_storages_instances = [4, 5, 6, 7]
-    k_vehicles_instances = [2]
+    m_storages_instances = [5, 6, 7, 8]
+    k_vehicles_instances = [2, 3, 4, 5]
 
     Q_vehicle_capacity = 100
     facility = 'F'
@@ -52,10 +52,10 @@ if __name__ == '__main__':
     # NOTE: dropwhile filter those points of the cartesian variable
     # which are already evaluated
     for n_f, m_s, itr in dropwhile(lambda x: x in computed, cartesian):
-        # k_v = m_storages_instances.index(m_s)
-        # k_vehicles_instances[k_v]
+        k_v = m_storages_instances.index(m_s)
+        k_v = k_vehicles_instances[k_v]
         
-        k_v = k_vehicles_instances[0]
+        # k_v = k_vehicles_instances[0]
 
         while True:
             print('n_f:', n_f, 'm_s:', m_s, 'k_v:', k_v, 'instance:', itr)

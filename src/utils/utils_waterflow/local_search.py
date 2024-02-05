@@ -233,31 +233,31 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
             if not seen:
 
                 if local_solution.obj_value < local_optimum.obj_value:
-                    print('local solution is better than the local optimum!')
+                    # print('local solution is better than the local optimum!')
                     optimal_dows[local_solution] = local_neighbours
                     P0_list.append(local_solution)
                     UE_list.append(local_solution)
                     better_solution = True
                     break
                 
-                print('local solution is not better than the local optimum.')
-                print('let\'s see if another tentative is possible searching from local solution...')
+                # print('local solution is not better than the local optimum.')
+                # print('let\'s see if another tentative is possible searching from local solution...')
                 
                 curr_dow = local_solution
 
             elif local_solution == local_optimum:
-                print('local solution is the local optimum.')
-                print('search for the best neighbour of the local optimum...')
+                # print('local solution is the local optimum.')
+                # print('search for the best neighbour of the local optimum...')
                 curr_dow = get_next_neighbour(local_neighbours, excluded_list, 
                         discarded_list, UE_list, E_list)
 
                 if curr_dow is None:
-                    print('no aligible neighbour is found.')
+                    # print('no aligible neighbour is found.')
                     local_solution = None
                     break
 
-                print('aligible neighbour is found!')
-                print('continue erosion process with eligible neighbour...')
+                # print('aligible neighbour is found!')
+                # print('continue erosion process with eligible neighbour...')
 
             else:
                 # local_solution was already seen and it is not the local_optimum.
@@ -270,7 +270,7 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
         i += 1
 
     if local_solution and better_solution:
-        print('continue erosion process with local solution...')
+        # print('continue erosion process with local solution...')
         return erosion(larp, local_solution, local_neighbours, max_UIE,
                        excluded_list, discarded_list, optimal_dows, 
                        P0_list, UE_list, E_list)
@@ -278,8 +278,8 @@ def erosion(larp:LARP, local_optimum:DOW, neighbours:list, max_UIE:int,
     UE_list.remove(local_optimum)
     E_list.append(local_optimum)
 
-    print('no better solution than the local optimum was found.')
-    print('local optimum is completelly erored!')
+    # print('no better solution than the local optimum was found.')
+    # print('local optimum is completelly erored!')
 
     return (local_optimum, [], excluded_list, discarded_list, 
             optimal_dows, UE_list, E_list)
