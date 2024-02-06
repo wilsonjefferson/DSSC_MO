@@ -1,10 +1,11 @@
 
+import os
 import numpy as np
 from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 
-from src.utils.gurobipy_utils import create_larp, add_constrs
+from src.utils.gurobipy_utils import load_larp, add_constrs
 from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check
 
 
@@ -17,7 +18,8 @@ def process_initializer(larp_inputs:dict, dow:DOW, params:list):
     tmp_neighbours = list()
     discarded_dows = list()
 
-    larp = create_larp(larp_inputs)
+    larp = load_larp(larp_inputs, os.getcwd() + '\\DSSC_MO\\backup\\larp_model.mps')
+
     dow.to_matrix()
     larp, constrs = add_constrs(larp, dow)
     dow.to_vector()

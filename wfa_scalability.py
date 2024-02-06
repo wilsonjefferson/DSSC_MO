@@ -3,15 +3,17 @@ from itertools import product, dropwhile
 import os
 import pickle
 
-from src.utils.get_data import random_data
 from src.larp import LARP
+
+from src.utils.get_data import random_data
 from src.waterflow import waterflow
 
  
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\pwfa_scalability.pkl'
+    folder_path = os.getcwd() + '\\DSSC_MO\\backup\\'
+    backup = folder_path+'pwfa_scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters
@@ -97,6 +99,8 @@ if __name__ == '__main__':
             end_build = timer()
             build_time = end_build-start_build
             print('Build time:', build_time)
+
+            larp.model.write(folder_path + 'larp_model.mps')
 
             print('model optimization in-progress...')
             start_opt = timer()

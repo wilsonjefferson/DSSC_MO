@@ -1,21 +1,28 @@
+import os
+import sys
 import numpy as np
 from itertools import product
 
+import gurobipy as gp
 from gurobipy import GRB
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
 
 
-def create_larp(inputs:dict):
+def load_larp(inputs:dict, model_at:str):
     larp = LARP(**inputs)
     
+    sys.stdout = open(os.devnull, 'w')
+    model = gp.read(model_at)
+    sys.stdout = sys.__stdout__
+
+    larp.model = model
     # NOTE: Since it is difficult to find an optimal solution 
     # trying with random X, Y and Z (decision variables)
     # we fix a random X and set guroby to find and stop the very first feasible solution
     larp.model.setParam('OutputFlag', 0)
     larp.model.setParam('LogToConsole', 0)
     larp.model.setParam('SolutionLimit', 1)
-    larp.build()
     return larp
 
 def remove_constrs(larp:LARP, constrs:dict) -> LARP:

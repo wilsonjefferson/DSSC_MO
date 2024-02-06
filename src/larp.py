@@ -1,8 +1,10 @@
+import os
+import sys
 import pandas as pd
 import numpy as np
 
 import gurobipy as gp
-from gurobipy import GRB
+from gurobipy import GRB, tupledict
 
 gp.disposeDefaultEnv() # reset default env variables
 
@@ -110,9 +112,13 @@ class LARP:
         self.J_0_idx = dict(zip(self.J_0, range(len(self.J_0))))
 
         # general Gurobi mdodel
+        sys.stdout = open(os.devnull, 'w')
         self._model = _model if _model else gp.Model('location_assignment_routing_problem')
+        sys.stdout = sys.__stdout__
+        
         self._model.modelSense = GRB.MINIMIZE # decleare the problem as minimization problem
         self._model.setParam('outputFlag', 0)
+        self._model.setParam('LogToConsole', 0)
 
     def __del__(self):
         self.dispose()
@@ -166,6 +172,24 @@ class LARP:
     def model(self):
         return self._model
     
+    @model.setter
+    def model(self, other:gp.Model):
+        self._model = other
+
+        model_vars = self._model.getVars()
+        self._X = tupledict({i:model_vars[i] for i in range(len(self.J_0))})
+        model_vars = model_vars[len(self.J_0):]
+
+        self._Y = tupledict({tuple([i, j]):model_vars[(self.n_fields-1)*i+j] for i in range(self.n_fields) for j in range(self.m_storages)})
+        model_vars = model_vars[self.n_fields*self.m_storages:]
+        model_vars = model_vars[:len(self.J_0)*(len(self.J_0)-1)]
+
+        from itertools import product
+
+        cartesian = list(product(range(len(self.J_0)), range(len(self.J_0))))
+        cartesian = [(i, j) for i, j in cartesian if i!=j]
+        self._Z = tupledict({tmp:model_vars[i] for i, tmp in enumerate(cartesian)})
+
     @property
     def inputs(self):
         return {'facility': self._facility,
@@ -422,7 +446,7 @@ class LARP:
             Runtime rounded
         '''
         return round(self._model.Runtime, 2)
-    
+
     def dispose(self) -> None:
         '''
             Public method to dispose the LARP model

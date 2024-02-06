@@ -8,6 +8,7 @@ from src.larp import LARP
 from src.utils.utils_waterflow.neighbourhood_strategies.multineighbourhood import process_initializer, task_to_swap
 from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import optimality_check
 
+
 N_PROCESSES = mp.cpu_count()
 
 
