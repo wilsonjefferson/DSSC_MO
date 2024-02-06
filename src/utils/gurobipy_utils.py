@@ -13,6 +13,7 @@ def create_larp(inputs:dict):
     # trying with random X, Y and Z (decision variables)
     # we fix a random X and set guroby to find and stop the very first feasible solution
     larp.model.setParam('OutputFlag', 0)
+    larp.model.setParam('LogToConsole', 0)
     larp.model.setParam('SolutionLimit', 1)
     larp.build()
     return larp

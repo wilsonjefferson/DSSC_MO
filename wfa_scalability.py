@@ -11,7 +11,7 @@ from src.waterflow import waterflow
 if __name__ == '__main__':
 
     # location where store the scalability data 
-    backup = os.getcwd() + '\\DSSC_MO\\backup\\wfa_scalability2.pkl'
+    backup = os.getcwd() + '\\DSSC_MO\\backup\\pwfa_scalability.pkl'
     print('backup:', backup)
 
     # LARP model paramenters
@@ -88,6 +88,7 @@ if __name__ == '__main__':
             # trying with random X, Y and Z (decision variables)
             # we fix a random X and set guroby to find and stop the very first feasible solution
             larp.model.setParam('OutputFlag', 0)
+            larp.model.setParam('LogToConsole', 0)
             larp.model.setParam('SolutionLimit', 1)
 
             print('model build in-progress...')

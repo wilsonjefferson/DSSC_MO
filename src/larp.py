@@ -320,7 +320,7 @@ class LARP:
         self._decleare_constrains()
         # print('LARP constrains defined')
 
-        print('-- LARP model build COMPLETED --')
+        # print('-- LARP model build COMPLETED --')
 
     def optimize(self) -> None:
         '''

@@ -7,8 +7,8 @@ from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import create_larp, add_constrs, remove_constrs
-from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
+from src.utils.utils_waterflow.neighbourhood_strategies.multineighbourhood import process_initializer, task_to_close, task_to_open
+from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import optimality_check
 
 
 N_PROCESSES = mp.cpu_count()
@@ -73,6 +73,10 @@ def opt_1(larp:LARP, dow:DOW) -> tuple:
         optimal_neighbours.append(good_neighbour)
         neighbours.extend(other_neighbours)
         discarded_list.extend(discarded_dows)
+
+    # print('optimal_neighbours:', len(optimal_neighbours))
+    # print('neighbours:', len(neighbours))
+    # print('discarded_list:', len(discarded_list))
 
     if optimal_neighbours: # i.e. current optimal has a list of neighbour solutions
         # retrieve the best neighbour according the objective value
@@ -158,46 +162,21 @@ def _change_status_to_close(larp:LARP, dow:DOW, tmp_X:np.ndarray, idx:int) -> tu
 
     cartesian = list(product(acceptable_values, repeat=len(indexes_positions_of_idx)))
 
-    chunks = [cartesian[x:x+N_PROCESSES] for x in range(0, len(cartesian), N_PROCESSES)]
-    feasibility_params = [tmp_X, tmp_dow.Z, tmp_neighbours, discarded_dows]
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                          tmp_X, tmp_dow.Z]
 
-    process_task = ft.partial(task_to_close, inputs=larp.inputs, dow=dow, tmp_dow_Y=tmp_dow.Y, 
-                                indexes_positions_of_idx=indexes_positions_of_idx, 
-                                params=feasibility_params)
+    process_task = ft.partial(task_to_close, tmp_dow_Y=tmp_dow.Y, 
+                            indexes_positions_of_idx=indexes_positions_of_idx)
 
-    print('start parallelization...')
-    with mp.Pool(N_PROCESSES) as pool:
-        pool.map(process_task, chunks)
-    print('parallelization completed.')
+    # print('start parallelization...')
+    with mp.Pool(N_PROCESSES, process_initializer, (larp.inputs, dow, feasibility_params)) as pool:
+        for results in pool.imap_unordered(process_task, cartesian, N_PROCESSES):
+            tmp_neighbours.extend(results[0])
+            discarded_dows.extend(results[1])
+    # print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
-
-def task_to_close(chunk:list, inputs:dict, dow:DOW, tmp_dow_Y:np.array, indexes_positions_of_idx:np.array, params:list):
-    larp = create_larp(inputs)
-
-    dow.to_matrix()
-    larp, constrs = add_constrs(larp, dow)
-    dow.to_vector()
-
-    feasibility_params = deepcopy(params)
-    feasibility_params.insert(2, larp)
-    feasibility_params.insert(3, constrs)
-    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles]+feasibility_params
-    feasibility_params.insert(4, None)
-
-    print('close | feasibility_params:', len(feasibility_params))
-
-    for disp in chunk:
-        tmp_dow_Y[indexes_positions_of_idx] = disp
-        tmp_Y = deepcopy(tmp_dow_Y)
-        feasibility_params[4] = tmp_Y
-        feasibility_check(*feasibility_params)
-    
-    print('neighbours:', len(feasibility_params[-2]))
-    print('discarded:', len(feasibility_params[-1]))
-    
-    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed
 
 def _change_status_to_open(larp:LARP, dow:DOW, tmp_X:np.ndarray, idx:int) -> tuple:
     '''
@@ -251,41 +230,17 @@ def _change_status_to_open(larp:LARP, dow:DOW, tmp_X:np.ndarray, idx:int) -> tup
     uniques = np.append(uniques, idx)
     cartesian = list(product(uniques, repeat=len(dow.Y)))
     
-    chunks = [cartesian[x:x+N_PROCESSES] for x in range(0, len(cartesian), N_PROCESSES)]
-    feasibility_params = [tmp_X, tmp_Z, tmp_neighbours, discarded_dows]
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, 
+                          tmp_X, tmp_Z]
 
-    process_task = ft.partial(task_to_open, inputs=larp.inputs, dow=dow,
-                                params=feasibility_params)
+    process_task = ft.partial(task_to_open)
 
-    print('start parallelization...')
-    with mp.Pool(N_PROCESSES) as pool:
-        pool.map(process_task, chunks)
-    print('parallelization completed.')
+    # print('start parallelization...')
+    with mp.Pool(N_PROCESSES, process_initializer, (larp.inputs, dow, feasibility_params)) as pool:
+        for results in pool.imap_unordered(process_task, cartesian, N_PROCESSES):
+            tmp_neighbours.extend(results[0])
+            discarded_dows.extend(results[1])
+    # print('parallelization completed.')
 
     local_optimum, dows = optimality_check(dow, tmp_neighbours)
     return local_optimum, dows, discarded_dows
-
-def task_to_open(chunk:list, inputs:dict, dow:DOW, params:list):
-    larp = create_larp(inputs)
-
-    dow.to_matrix()
-    larp, constrs = add_constrs(larp, dow)
-    dow.to_vector()
-
-    feasibility_params = deepcopy(params)
-    feasibility_params.insert(2, larp)
-    feasibility_params.insert(3, constrs)
-    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles]+feasibility_params
-    feasibility_params.insert(4, None)
-
-    print('open | feasibility_params:', len(feasibility_params))
-
-    for disp in chunk:
-        tmp_Y = np.array(disp)
-        feasibility_params[4] = tmp_Y
-        feasibility_check(*feasibility_params)
-
-    print('tmp_neighbours:', len(feasibility_params[-2]))
-    print('discarded:', len(feasibility_params[-1]))
-
-    larp = remove_constrs(larp, constrs) # remove added constraints, no more needed

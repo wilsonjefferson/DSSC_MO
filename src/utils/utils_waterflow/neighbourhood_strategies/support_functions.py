@@ -6,7 +6,7 @@ from src.utils.gurobipy_utils import fit, modify_rhs_constrs
 
 def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int, 
                        tmp_X:np.array, tmp_Y:np.array, tmp_Z:np.array, 
-                       larp:LARP, constrs:dict, tmp_neighbours:list, discarded_dows:list) -> None:
+                       larp:LARP, constrs:dict) -> tuple:
     '''
     This is a suppot function used to create a new dow solution 
     and check if this solution is feasible.
@@ -48,6 +48,9 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
     None
     '''
 
+    tmp_neighbours = list()
+    discarded_dows = list()
+
     neighbour_dow = DOW(m_storages, n_fields, k_vehicles)
     neighbour_dow.X = tmp_X
     neighbour_dow.Y = tmp_Y
@@ -71,8 +74,7 @@ def feasibility_check(m_storages:int, n_fields:int, k_vehicles:int,
         # print('neighbour dow is NOT FEASIBLE')
         discarded_dows.append(neighbour_dow)
 
-    print('tmp_neighbours:', len(tmp_neighbours))
-    print('discarded_dows:', len(discarded_dows))
+    return tmp_neighbours, discarded_dows
     
 def optimality_check(dow:DOW, neighbours:list) -> tuple:
     '''

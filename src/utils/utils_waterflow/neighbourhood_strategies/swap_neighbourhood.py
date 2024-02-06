@@ -1,11 +1,14 @@
 import numpy as np
+import functools as ft
+import multiprocessing as mp
 from itertools import product
-from copy import deepcopy
 
 from src.utils.utils_waterflow.dow import DOW
 from src.larp import LARP
-from src.utils.gurobipy_utils import add_constrs, remove_constrs
-from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import feasibility_check, optimality_check
+from src.utils.utils_waterflow.neighbourhood_strategies.multineighbourhood import process_initializer, task_to_swap
+from src.utils.utils_waterflow.neighbourhood_strategies.support_functions import optimality_check
+
+N_PROCESSES = mp.cpu_count()
 
 
 def swap(larp:LARP, dow:DOW) -> tuple:
@@ -40,14 +43,8 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         List of no feasible solutions
     '''
 
-    dow.to_matrix()
-    larp, constrs = add_constrs(larp, dow)
-    dow.to_vector()
-    # print('dow:', dow)
-
     neighbours = list()
     discarded_dows = list()
-    constrs = dict()
 
     X_idx_zeros = np.nonzero(dow.X == 0)[0]
     X_idx_nonzeros = np.nonzero(dow.X)[0]
@@ -56,37 +53,16 @@ def swap(larp:LARP, dow:DOW) -> tuple:
         return dow, list(), discarded_dows
     
     cartesian = product(X_idx_zeros, X_idx_nonzeros)
+        
+    feasibility_params = [dow.m_storages, dow.n_fields, dow.k_vehicles, None, None]
+    process_task = ft.partial(task_to_swap, dow)
 
-    # NOTE: parallelize for-loop
-    for zero_idx, nonzero_idx in cartesian:
-
-        zero_idx += 1
-        nonzero_idx += 1
-        # print('zero_idx:', zero_idx, 'nonzero_idx:', nonzero_idx)
-
-        # adjust X decision variable
-        tmp_X = deepcopy(dow.X)
-        tmp_X[zero_idx-1] = 1
-        tmp_X[nonzero_idx-1] = 0
-
-        # adjust Y decision variable
-        tmp_Y = deepcopy(dow.Y)
-        reassign_indexes = np.nonzero(tmp_Y == nonzero_idx)[0]
-        tmp_Y[reassign_indexes] = zero_idx
-        # print('tmp_Y:', tmp_Y)
-
-        # adjust Z decision variable
-        tmp_Z = deepcopy(dow.Z)
-        reassign_indexes = np.nonzero(tmp_Z == nonzero_idx)[0]
-        tmp_Z[reassign_indexes] = zero_idx
-        # print('tmp_Z:', tmp_Z)
-
-        feasibility_check(dow.m_storages, dow.n_fields, dow.k_vehicles, 
-                          tmp_X, tmp_Y, tmp_Z, larp, constrs, 
-                          neighbours, discarded_dows)
-
-    # print('neighbours:', neighbours)
-    larp = remove_constrs(larp, constrs)
+    # print('start parallelization...')
+    with mp.Pool(N_PROCESSES, process_initializer, (larp.inputs, dow, feasibility_params)) as pool:
+        for results in pool.imap_unordered(process_task, cartesian, N_PROCESSES):
+            neighbours.extend(results[0])
+            discarded_dows.extend(results[1])
+    # print('parallelization completed.')
     
     local_optimum, dows = optimality_check(dow, neighbours)
     return local_optimum, dows, discarded_dows
