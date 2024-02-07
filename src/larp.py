@@ -112,9 +112,9 @@ class LARP:
         self.J_0_idx = dict(zip(self.J_0, range(len(self.J_0))))
 
         # general Gurobi mdodel
-        sys.stdout = open(os.devnull, 'w')
+        # sys.stdout = open(os.devnull, 'w')
         self._model = _model if _model else gp.Model('location_assignment_routing_problem')
-        sys.stdout = sys.__stdout__
+        # sys.stdout = sys.__stdout__
         
         self._model.modelSense = GRB.MINIMIZE # decleare the problem as minimization problem
         self._model.setParam('outputFlag', 0)

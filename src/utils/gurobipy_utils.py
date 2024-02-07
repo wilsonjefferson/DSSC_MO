@@ -12,9 +12,9 @@ from src.larp import LARP
 def load_larp(inputs:dict, model_at:str):
     larp = LARP(**inputs)
     
-    sys.stdout = open(os.devnull, 'w')
+    # sys.stdout = open(os.devnull, 'w')
     model = gp.read(model_at)
-    sys.stdout = sys.__stdout__
+    # sys.stdout = sys.__stdout__
 
     larp.model = model
     # NOTE: Since it is difficult to find an optimal solution 

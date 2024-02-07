@@ -17,7 +17,7 @@ if __name__ == '__main__':
     print('backup:', backup)
 
     # LARP model paramenters
-    n_iterations = 5
+    n_iterations = 10
     iterations = range(n_iterations)
     n_fields_instances = [5]
     m_storages_instances = [5, 6, 7, 8]
